@@ -1,0 +1,90 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:test/user/data/user.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:test/user/data/user_action.dart';
+
+class UserPreferences {
+  static Future<void> saveToken(String token) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+  }
+
+  static Future<String?> getToken() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  static Future<User> fetchProfileInfo() async {
+    String? token = await getToken();
+    if (token == null) {
+      throw Exception('Токен не существует');
+    }
+
+    var url = Uri.parse('http://51.250.110.96:8080/v1/employee/info');
+    var headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    var response = await http.get(url, headers: headers);
+    if (response.statusCode == 200) {
+      var responseBody = utf8.decode(response.bodyBytes);
+      var userData = jsonDecode(responseBody);
+      return User.fromJson(userData);
+    } else {
+      throw Exception('Ошибка сервера: ${response.statusCode}');
+    }
+  }
+
+  static Future<User> fetchUserInfoById(String userId) async {
+    String? token = await getToken();
+    if (token == null) {
+      throw Exception('Токен не существует');
+    }
+
+    var url = Uri.parse('http://51.250.110.96:8080/v1/employee/info')
+        .replace(queryParameters: {'employee_id': userId});
+    var headers = {'Authorization': 'Bearer $token'};
+
+    var response = await http.get(url, headers: headers);
+    if (response.statusCode == 200) {
+      var responseBody = utf8.decode(response.bodyBytes);
+      var userData = jsonDecode(responseBody);
+      return User.fromJson(userData);
+    } else {
+      throw Exception('Ошибка сервера: ${response.statusCode}');
+    }
+  }
+
+  static Future<List<UserAction>> fetchUserActions(
+      String from, String to, String? employeeId) async {
+    String? token = await getToken();
+    if (token == null) {
+      throw Exception('Токен не существует');
+    }
+
+    var url = Uri.parse('http://51.250.110.96:8080/v1/actions');
+    var headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    var body = jsonEncode({
+      'from': from,
+      'to': to,
+      if (employeeId != null) 'employee_id': employeeId,
+    });
+
+    var response = await http.post(url, headers: headers, body: body);
+    if (response.statusCode == 200) {
+      var responseBody = utf8.decode(response.bodyBytes);
+      var json = jsonDecode(responseBody) as Map<String, dynamic>;
+      List<dynamic> actionsJson = json['actions'] as List<dynamic>;
+      return actionsJson
+          .map((actionJson) => UserAction.fromJson(actionJson))
+          .toList();
+    } else {
+      throw Exception('Ошибка сервера: ${response.statusCode}');
+    }
+  }
+}
