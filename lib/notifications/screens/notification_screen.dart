@@ -29,19 +29,15 @@ class NoticePageState extends State<NoticePage> {
   final GlobalKey<NavigatorState> _noticeNavigatorKey =
       GlobalKey<NavigatorState>();
   Future<NotificationsResponse>? futureNotifications;
-  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     loadNotifications();
-    _timer = Timer.periodic(
-        const Duration(seconds: 5), (Timer t) => loadNotifications());
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     super.dispose();
   }
 
@@ -117,7 +113,7 @@ class NoticePageState extends State<NoticePage> {
   }
 
   Future<NotificationsResponse> fetchNotifications(String token) async {
-    const url = 'http://51.250.110.96:8080/v1/notifications';
+    const url = 'https://working-day.online:8080/v1/notifications';
     final response = await http.post(
       Uri.parse(url),
       headers: {
@@ -328,7 +324,7 @@ class NotificationCard extends StatefulWidget {
 class _NotificationCardState extends State<NotificationCard> {
   Future<String?> fetchVacationDocumentLink(
       String token, String actionId, String requestType) async {
-    const url = 'http://51.250.110.96:8080/v1/documents/vacation';
+    const url = 'https://working-day.online:8080/v1/documents/vacation';
     final uri = Uri.parse(url).replace(queryParameters: {
       'action_id': actionId,
       'request_type': requestType,
@@ -349,7 +345,7 @@ class _NotificationCardState extends State<NotificationCard> {
     String? token = await UserPreferences.getToken();
     if (token == null) return;
 
-    const url = 'http://51.250.110.96:8080/v1/notifications';
+    const url = 'https://working-day.online:8080/v1/notifications';
     final response = await http.post(
       Uri.parse(url),
       headers: {
@@ -604,7 +600,7 @@ class _NotificationCardState extends State<NotificationCard> {
       throw Exception('Токен не найден');
     }
 
-    const url = 'http://51.250.110.96:8080/v1/abscence/verdict';
+    const url = 'https://working-day.online:8080/v1/abscence/verdict';
     final response = await http.post(
       Uri.parse(url),
       headers: {

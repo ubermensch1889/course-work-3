@@ -1,4 +1,3 @@
-// ignore: file_names
 class UserAction {
   final String id;
   final String type;
@@ -19,5 +18,10 @@ class UserAction {
       startDate: json['start_date'] as String,
       endDate: json['end_date'] as String,
     );
+  }
+
+  @override
+  String toString() {
+    return 'UserAction(id: $id, type: $type, startDate: $startDate, endDate: $endDate)';
   }
 }

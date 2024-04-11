@@ -26,11 +26,26 @@ class SearchPageState extends State<SearchPage> {
       return;
     }
 
-    final users = await _searchService.searchUsers(_controller.text);
+    final users = await _searchService.searchUsers(_controller.text, limit: 5);
     setState(() {
       _isSearchPerformed = true;
       _users = users;
     });
+  }
+
+  void _suggestUsers(String query) async {
+    if (query.isNotEmpty) {
+      final suggestions = await _searchService.suggestUsers(query, limit: 5);
+      setState(() {
+        _users = suggestions;
+        _isSearchPerformed = true;
+      });
+    } else {
+      setState(() {
+        _users = [];
+        _isSearchPerformed = false;
+      });
+    }
   }
 
   @override
@@ -87,10 +102,7 @@ class SearchPageState extends State<SearchPage> {
         suffixIcon: IconButton(
           onPressed: () {
             _controller.clear();
-            setState(() {
-              _users = [];
-              _isSearchPerformed = false;
-            });
+            _suggestUsers('');
           },
           icon: const FaIcon(
             FontAwesomeIcons.circleXmark,
@@ -98,6 +110,7 @@ class SearchPageState extends State<SearchPage> {
           ),
         ),
       ),
+      onChanged: _suggestUsers,
     );
   }
 
@@ -116,6 +129,7 @@ class SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSearchResults() {
+    // Изменено для использования Card, как во втором коде
     return Expanded(
       child: !_isSearchPerformed
           ? Container()
@@ -136,30 +150,46 @@ class SearchPageState extends State<SearchPage> {
                       Divider(color: Colors.blueGrey.shade100),
                   itemBuilder: (context, index) {
                     final user = _users[index];
-                    return ListTile(
-                      title: Text(
-                        '${user.name} ${user.surname} ${user.patronymic ?? ""}',
-                        style: const TextStyle(
-                          fontFamily: 'CeraPro',
-                          color: Color.fromARGB(255, 22, 79, 148),
+                    return Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 22, 79, 148),
+                          width: 2.0,
+                        ),
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      child: Card(
+                        margin: EdgeInsets.zero,
+                        color: const Color.fromARGB(255, 245, 245, 245),
+                        elevation: 0,
+                        child: ListTile(
+                          title: Text(
+                            '${user.name} ${user.surname} ${user.patronymic ?? ""}',
+                            style: const TextStyle(
+                              fontFamily: 'CeraPro',
+                              color: Color.fromARGB(255, 22, 79, 148),
+                            ),
+                          ),
+                          leading: user.photo_link != null
+                              ? CircleAvatar(
+                                  backgroundImage:
+                                      NetworkImage(user.photo_link!),
+                                )
+                              : const CircleAvatar(
+                                  child: Icon(Icons.person),
+                                ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SearchProfileScreen(
+                                  userId: user.id ?? 'defaultUserId',
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
-                      leading: user.photo_link != null
-                          ? CircleAvatar(
-                              backgroundImage: NetworkImage(user.photo_link!),
-                            )
-                          : const CircleAvatar(
-                              child: Icon(Icons.person),
-                            ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SearchProfileScreen(
-                                userId: user.id ?? 'defaultUserId'),
-                          ),
-                        );
-                      },
                     );
                   },
                 ),

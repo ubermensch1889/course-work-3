@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:test/services/screens/abscence_screen.dart';
+import 'package:test/services/screens/attendance_screen.dart';
 import 'package:test/services/screens/documents_screen.dart';
 import 'package:test/services/screens/payments_screen.dart';
+import 'package:test/user/domain/user_preferences.dart';
 
 class ServicesPage extends StatelessWidget {
   ServicesPage({Key? key}) : super(key: key);
@@ -39,6 +41,9 @@ class ServicesPage extends StatelessWidget {
             case '/income':
               builder = (BuildContext _) => const PaymentsScreen();
               break;
+            case '/attendance':
+              builder = (BuildContext _) => const AttendanceScreen();
+              break;
             default:
               throw Exception('Invalid route: ${settings.name}');
           }
@@ -49,32 +54,50 @@ class ServicesPage extends StatelessWidget {
   }
 
   Widget _servicesGrid(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: (1 / 1.2),
-      padding: const EdgeInsets.all(16),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      children: [
-        _buildServiceButton(
-          _navigatorKey.currentState?.context ?? context,
-          'assets/images/income_icon.png',
-          'Мои доходы',
-          '/income',
-        ),
-        _buildServiceButton(
-          _navigatorKey.currentState?.context ?? context,
-          'assets/images/documents_icon.png',
-          'Мои документы',
-          '/documents',
-        ),
-        _buildServiceButton(
-          _navigatorKey.currentState?.context ?? context,
-          'assets/images/vacation_icon.png',
-          'Отпуска',
-          '/absence',
-        ),
-      ],
+    return FutureBuilder<String?>(
+      future: UserPreferences.getRole(), // Получаем роль асинхронно
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.hasData) {
+          final role = snapshot.data;
+          return GridView.count(
+            crossAxisCount: 2,
+            childAspectRatio: (1 / 1.2),
+            padding: const EdgeInsets.all(16),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            children: [
+              _buildServiceButton(
+                context,
+                'assets/images/income_icon.png',
+                'Мои доходы',
+                '/income',
+              ),
+              _buildServiceButton(
+                context,
+                'assets/images/documents_icon.png',
+                'Мои документы',
+                '/documents',
+              ),
+              _buildServiceButton(
+                context,
+                'assets/images/vacation_icon.png',
+                'Отпуска',
+                '/absence',
+              ),
+              if (role == 'manager')
+                _buildServiceButton(
+                  context,
+                  'assets/images/attendance_icon.png',
+                  'Табель',
+                  '/attendance',
+                ),
+            ],
+          );
+        } else {
+          return const Center(child: CircularProgressIndicator());
+        }
+      },
     );
   }
 

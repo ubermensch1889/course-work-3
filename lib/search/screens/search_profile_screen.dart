@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:test/search/domain/search_profile_service.dart';
+import 'package:test/search/screens/search_calendar.dart';
 import 'package:test/user/data/user.dart';
 
 class SearchProfileScreen extends StatelessWidget {
@@ -36,6 +37,17 @@ class SearchProfileScreen extends StatelessWidget {
           }
           return buildUserProfile(snapshot.data!);
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color.fromARGB(255, 22, 79, 148),
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => UserCalendarPage(userId: userId),
+        )),
+        tooltip: 'Открыть календарь',
+        child: const FaIcon(
+          FontAwesomeIcons.calendar,
+          color: Color.fromARGB(255, 245, 245, 245),
+        ),
       ),
     );
   }

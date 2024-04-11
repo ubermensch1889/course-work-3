@@ -14,6 +14,7 @@ class EditProfilePage extends StatefulWidget {
 class EditProfilePageState extends State<EditProfilePage> {
   final ProfileManager _profileManager = ProfileManager();
 
+  final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _birthdayController = TextEditingController();
   final TextEditingController _telegramIdController = TextEditingController();
@@ -29,6 +30,7 @@ class EditProfilePageState extends State<EditProfilePage> {
     var user = await _profileManager.fetchUserProfile();
     if (user != null) {
       setState(() {
+        _passwordController.text = user.password ?? '';
         _emailController.text = user.email ?? '';
         _birthdayController.text = user.birthday ?? '';
         _telegramIdController.text = user.telegram_id ?? '';
@@ -40,6 +42,7 @@ class EditProfilePageState extends State<EditProfilePage> {
   void saveProfile() async {
     UserProfileUpdate update = UserProfileUpdate(
       email: _emailController.text,
+      password: _passwordController.text,
       birthday: _birthdayController.text,
       telegram_id: _telegramIdController.text,
       vk_id: _vkIdController.text,
@@ -101,6 +104,10 @@ class EditProfilePageState extends State<EditProfilePage> {
         padding: const EdgeInsets.all(20.0),
         child: ListView(
           children: [
+            TextField(
+              controller: _passwordController,
+              decoration: const InputDecoration(labelText: 'Пароль'),
+            ),
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(labelText: 'Email'),

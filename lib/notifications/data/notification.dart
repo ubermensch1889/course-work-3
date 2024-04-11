@@ -21,19 +21,21 @@ class NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      id: json['id'],
-      type: json['type'],
-      isRead: json['is_read'],
-      text: json['text'],
-      created: json['created'],
-      actionId: json['action_id'],
-      sender: Employee.fromJson(json['sender']),
+      id: json['id'] as String? ??
+          'default_id', // Укажите здесь адекватные значения по умолчанию
+      type: json['type'] as String? ?? 'default_type',
+      isRead: json['is_read'] ??
+          false, // Если isRead может быть null, установите значение по умолчанию
+      text: json['text'] as String? ?? 'default_text',
+      created: json['created'] as String? ?? 'default_created',
+      actionId: json['action_id'] as String? ?? 'default_action_id',
+      sender: Employee.fromJson(json['sender'] as Map<String, dynamic>? ?? {}),
     );
   }
 }
 
 class NotificationsResponse {
-  List<NotificationModel> notifications;
+  final List<NotificationModel> notifications;
 
   NotificationsResponse({required this.notifications});
 

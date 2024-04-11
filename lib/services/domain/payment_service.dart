@@ -10,7 +10,7 @@ class PaymentApi {
       throw Exception('Token not found');
     }
 
-    var url = Uri.parse('http://51.250.110.96:8080/v1/payments');
+    var url = Uri.parse('https://working-day.online:8080/v1/payments');
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:test/auth/domain/auth_manager.dart';
 import 'package:test/calendar/screens/calendar_screen.dart';
+import 'package:test/start/data/navigator_check.dart';
 import 'package:test/start/screens/nav_bar.dart';
 import 'package:test/notifications/screens/notification_screen.dart';
 import 'package:test/profile/screens/profile_screen.dart';
@@ -15,7 +18,18 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru_RU', null);
 
+  HttpOverrides.global = _MyHttpOverrides();
+
   runApp(const ProviderScope(child: MyApp()));
+}
+
+class _MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
 }
 
 final authStateProvider = StateProvider<bool>((ref) => false);
@@ -39,10 +53,9 @@ class MyApp extends ConsumerWidget {
         Locale('en', ''),
         Locale('ru', 'RU'),
       ],
-      // Define the default locale
       locale: const Locale('ru', 'RU'),
-      home: isAuthorized ? const Home() : StartScreen(),
-      // ... any other MaterialApp properties
+      home: isAuthorized ? const Home() : const StartScreen(),
+      navigatorObservers: [MyNavigatorObserver()],
     );
   }
 }

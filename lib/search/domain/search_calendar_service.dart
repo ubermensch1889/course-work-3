@@ -1,12 +1,16 @@
 import 'package:test/user/data/user_action.dart';
 import 'package:test/user/domain/user_preferences.dart';
 
-class CalendarService {
+class SearchCalendarService {
   Future<Map<DateTime, List<UserAction>>> fetchUserActionsForCalendar(
-      DateTime start, DateTime end) async {
+      DateTime start, DateTime end, String userId) async {
     final from = start.toIso8601String();
     final to = end.toIso8601String();
-    final userActions = await UserPreferences.fetchUserActions(from, to, null);
+
+    // This is a placeholder for your actual call to fetch user actions,
+    // which now includes a `userId` to filter actions for a specific user.
+    final userActions =
+        await UserPreferences.fetchUserActions(from, to, userId);
 
     final Map<DateTime, List<UserAction>> events = {};
     for (final action in userActions) {

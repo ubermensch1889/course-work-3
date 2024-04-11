@@ -7,7 +7,9 @@ import 'package:test/user/domain/user_preferences.dart';
 class AuthManager {
   Future<bool> authenticate(
       String login, String password, WidgetRef ref) async {
-    final url = Uri.parse('http://51.250.110.96:8080/v1/authorize');
+    await UserPreferences.logout();
+
+    final url = Uri.parse('https://working-day.online:8080/v1/authorize');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -18,8 +20,11 @@ class AuthManager {
     );
 
     if (response.statusCode == 200) {
-      final String token = json.decode(response.body)['token'];
+      final responseData = json.decode(response.body);
+      final String token = responseData['token'];
+      final String role = responseData['role'];
       await UserPreferences.saveToken(token);
+      await UserPreferences.saveRole(role);
       ref.read(authStateProvider.notifier).state = true;
       return true;
     }

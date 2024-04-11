@@ -18,7 +18,8 @@ class ProfileService {
       print('Error: Authorization token is missing');
       return null;
     }
-    var url = Uri.parse('http://51.250.110.96:8080/v1/profile/upload-photo');
+    var url =
+        Uri.parse('https://working-day.online:8080/v1/profile/upload-photo');
     var headers = {'Authorization': 'Bearer $token'};
     var response = await http.post(url, headers: headers);
     if (response.statusCode == 200) {

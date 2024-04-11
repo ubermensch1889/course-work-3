@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -42,17 +40,22 @@ class CalendarPageState extends State<CalendarPage> {
     DateTime firstDayOfCurrentMonth =
         DateTime(_focusedDay.year, _focusedDay.month, 1);
     DateTime lastDayOfNextMonth =
-        DateTime(_focusedDay.year, _focusedDay.month + 1, 0);
+        DateTime(_focusedDay.year, _focusedDay.month + 1, 0)
+            .add(const Duration(days: 1))
+            .subtract(const Duration(seconds: 1));
 
-    _events = await _calendarService.fetchUserActionsForCalendar(
-        firstDayOfCurrentMonth, lastDayOfNextMonth);
-    setState(() {});
+    Map<DateTime, List<UserAction>> fetchedEvents =
+        await _calendarService.fetchUserActionsForCalendar(
+            firstDayOfCurrentMonth, lastDayOfNextMonth);
+
+    setState(() {
+      _events = fetchedEvents;
+    });
   }
 
   Future<void> _fetchApprovedVacations() async {
     String? token = await UserPreferences.getToken();
     if (token == null) {
-      print('Token not found');
       return;
     }
     var notificationService = NotificationService();
@@ -75,11 +78,11 @@ class CalendarPageState extends State<CalendarPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text(
-          'Календарь',
-          style: TextStyle(
-              fontFamily: 'CeraPro', fontSize: 26, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Календарь',
+            style: TextStyle(
+                fontFamily: 'CeraPro',
+                fontSize: 26,
+                fontWeight: FontWeight.bold)),
       ),
       body: Column(
         children: [
@@ -94,32 +97,48 @@ class CalendarPageState extends State<CalendarPage> {
                 headerStyle: const HeaderStyle(formatButtonVisible: false),
                 selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                 calendarFormat: _calendarFormat,
-                eventLoader: (day) =>
-                    _events[day]
-                        ?.where((event) => approvedIds.contains(event.id))
-                        .toList() ??
-                    [],
+                eventLoader: (day) {
+                  final eventsForDay = _events[day] ?? [];
+                  return eventsForDay;
+                },
                 startingDayOfWeek: StartingDayOfWeek.monday,
                 calendarBuilders: CalendarBuilders(
                   markerBuilder: (context, date, events) {
                     if (events.isNotEmpty) {
-                      Color markerColor = Colors.transparent;
-                      for (UserAction event in events) {
-                        markerColor = event.type == 'attendance'
-                            ? Colors.green
-                            : Colors.purple;
-                      }
-                      return Positioned(
-                        right: 1,
-                        top: 1,
-                        child: Container(
-                          decoration: BoxDecoration(
+                      bool hasAttendance =
+                          events.any((event) => event.type == 'attendance');
+                      bool hasVacation =
+                          events.any((event) => event.type == 'vacation');
+                      List<Widget> markers = [];
+
+                      if (hasAttendance) {
+                        markers.add(Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 1.0),
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            color: markerColor,
+                            color: Colors.green, // Зеленый для посещений
                           ),
-                          width: 8.0,
-                          height: 8.0,
-                        ),
+                          width: 7.0,
+                          height: 7.0,
+                        ));
+                      }
+
+                      if (hasVacation) {
+                        markers.add(Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 1.0),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.purple, // Фиолетовый для отпусков
+                          ),
+                          width: 7.0,
+                          height: 7.0,
+                        ));
+                      }
+
+                      return Positioned(
+                        right: 5,
+                        top: 5,
+                        child: Row(children: markers),
                       );
                     }
                     return null;
@@ -140,7 +159,9 @@ class CalendarPageState extends State<CalendarPage> {
                   }
                 },
                 onPageChanged: (focusedDay) {
-                  _focusedDay = focusedDay;
+                  setState(() {
+                    _focusedDay = focusedDay;
+                  });
                   _fetchUserActions();
                 },
               );

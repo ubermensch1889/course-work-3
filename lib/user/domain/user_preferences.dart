@@ -15,13 +15,34 @@ class UserPreferences {
     return prefs.getString('auth_token');
   }
 
+  static Future<void> saveRole(String role) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_role', role);
+  }
+
+  static Future<String?> getRole() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_role');
+  }
+
+  static SharedPreferences? _prefs;
+
+  static Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  static Future<void> logout() async {
+    if (_prefs == null) await init();
+    await _prefs!.clear();
+  }
+
   static Future<User> fetchProfileInfo() async {
     String? token = await getToken();
     if (token == null) {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('http://51.250.110.96:8080/v1/employee/info');
+    var url = Uri.parse('https://working-day.online:8080/v1/employee/info');
     var headers = {
       'Authorization': 'Bearer $token',
     };
@@ -42,7 +63,7 @@ class UserPreferences {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('http://51.250.110.96:8080/v1/employee/info')
+    var url = Uri.parse('https://working-day.online:8080/v1/employee/info')
         .replace(queryParameters: {'employee_id': userId});
     var headers = {'Authorization': 'Bearer $token'};
 
@@ -63,7 +84,7 @@ class UserPreferences {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('http://51.250.110.96:8080/v1/actions');
+    var url = Uri.parse('https://working-day.online:8080/v1/actions');
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

@@ -18,13 +18,13 @@ class ProfileManager {
       return false;
     }
 
-    var url = Uri.parse('http://51.250.110.96:8080/v1/profile/edit');
+    var url = Uri.parse('https://working-day.online:8080/v1/profile/edit');
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
     };
     var body = jsonEncode({
-      'email': update.email,
+      'password': update.password,
       'birthday': update.birthday,
       'telegram_id': update.telegram_id,
       'vk_id': update.vk_id,

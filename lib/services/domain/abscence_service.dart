@@ -10,7 +10,8 @@ class AbsenceService {
       return false;
     }
 
-    final url = Uri.parse('http://51.250.110.96:8080/v1/abscence/request');
+    final url =
+        Uri.parse('https://working-day.online:8080/v1/abscence/request');
     final response = await http.post(
       url,
       headers: {
