@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "590577079005",
+    "project_id": "work-day-a2529",
+    "storage_bucket": "work-day-a2529.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:590577079005:android:0815800f03d11b9c108134",
+        "android_client_info": {
+          "package_name": "com.example.test"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVadHO3pBI2xTdkkUG5vLEWKOJ0USFTIY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

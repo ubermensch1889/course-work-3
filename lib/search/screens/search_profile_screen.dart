@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:test/search/domain/search_profile_service.dart';
 import 'package:test/search/screens/search_calendar.dart';
@@ -33,7 +34,12 @@ class SearchProfileScreen extends StatelessWidget {
           if (snapshot.hasError || snapshot.data == null) {
             return Center(
                 child: Text(
-                    'Ошибка: ${snapshot.error ?? "Пользователь не найден"}'));
+              'Ошибка: ${snapshot.error ?? "Пользователь не найден"}',
+              style: const TextStyle(
+                fontFamily: 'CeraPro',
+                fontSize: 16,
+              ),
+            ));
           }
           return buildUserProfile(snapshot.data!);
         },
@@ -96,35 +102,52 @@ class InfoSection extends StatelessWidget {
     return Column(
       children: [
         if (user.phones != null && user.phones!.isNotEmpty)
-          ListTile(
-            leading: const FaIcon(FontAwesomeIcons.phone),
-            title: Text(user.phones!.join(", "),
-                style: const TextStyle(fontFamily: 'CeraPro')),
-          ),
-        ListTile(
-          leading: const FaIcon(FontAwesomeIcons.cakeCandles),
-          title: Text(user.birthday ?? "Дата рождения не указана",
-              style: const TextStyle(fontFamily: 'CeraPro')),
-        ),
-        ListTile(
-          leading: const FaIcon(FontAwesomeIcons.person),
-          title: Text(
-              user.team != null
-                  ? "Команда: ${user.team}"
-                  : "Команда не указана",
-              style: const TextStyle(fontFamily: 'CeraPro')),
-        ),
-        ListTile(
-          leading: const FaIcon(FontAwesomeIcons.telegram),
-          title: Text(user.telegram_id ?? "Телеграм не указан",
-              style: const TextStyle(fontFamily: 'CeraPro')),
-        ),
-        ListTile(
-          leading: const FaIcon(FontAwesomeIcons.vk),
-          title: Text(user.vk_id ?? "ВК не указан",
-              style: const TextStyle(fontFamily: 'CeraPro')),
-        ),
+          buildListTile(context, "Телефоны: ", user.phones!.join(", "),
+              FontAwesomeIcons.phone),
+        buildListTile(
+            context,
+            "Дата рождения: ",
+            user.birthday ?? "Дата рождения не указана",
+            FontAwesomeIcons.cakeCandles),
+        buildListTile(context, "Команда: ", user.team ?? "Команда не указана",
+            FontAwesomeIcons.users),
+        buildListTile(
+            context,
+            "Телеграм: ",
+            user.telegram_id ?? "Телеграм не указан",
+            FontAwesomeIcons.telegram),
+        buildListTile(
+            context, "ВК: ", user.vk_id ?? "ВК не указан", FontAwesomeIcons.vk),
       ],
+    );
+  }
+
+  Widget buildListTile(
+      BuildContext context, String leadingText, String text, IconData icon) {
+    return ListTile(
+      leading: FaIcon(icon, size: 20),
+      title: Row(
+        children: [
+          Text(leadingText,
+              style: const TextStyle(
+                  fontFamily: 'CeraPro', fontWeight: FontWeight.bold)),
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: text)).then((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$text скопирован в буфер обмена'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                });
+              },
+              child: Text(text, style: const TextStyle(fontFamily: 'CeraPro')),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

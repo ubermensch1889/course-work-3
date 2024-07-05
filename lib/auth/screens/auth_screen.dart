@@ -12,18 +12,21 @@ class AuthScreen extends ConsumerStatefulWidget {
 class AuthScreenState extends ConsumerState<AuthScreen> {
   late final TextEditingController loginController;
   late final TextEditingController passwordController;
+  late final TextEditingController companyIdController;
   bool passwordVisible = false;
   @override
   void initState() {
     super.initState();
     loginController = TextEditingController();
     passwordController = TextEditingController();
+    companyIdController = TextEditingController();
   }
 
   @override
   void dispose() {
     loginController.dispose();
     passwordController.dispose();
+    companyIdController.dispose();
     super.dispose();
   }
 
@@ -98,6 +101,22 @@ class AuthScreenState extends ConsumerState<AuthScreen> {
               onChanged: (value) {},
               cursorColor: const Color.fromARGB(255, 22, 79, 148),
             ),
+            TextField(
+              controller: companyIdController,
+              decoration: const InputDecoration(
+                hintText: 'Компания',
+                hintStyle: TextStyle(
+                  fontFamily: 'CeraPro',
+                  fontSize: 18,
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide:
+                      BorderSide(color: Color.fromARGB(255, 22, 79, 148)),
+                ),
+              ),
+              onChanged: (value) {},
+              cursorColor: const Color.fromARGB(255, 22, 79, 148),
+            ),
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () async {
@@ -105,6 +124,7 @@ class AuthScreenState extends ConsumerState<AuthScreen> {
                     await ref.read(authManagerProvider).authenticate(
                           loginController.text,
                           passwordController.text,
+                          companyIdController.text,
                           ref,
                         );
                 if (success) {

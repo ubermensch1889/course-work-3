@@ -19,8 +19,8 @@ class AttendanceRecord {
     var employee = json['employee'];
     return AttendanceRecord(
       employeeId: employee['id'],
-      name: employee['name'],
       surname: employee['surname'],
+      name: employee['name'],
       patronymic: employee['patronymic'],
       startDate: json['start_date'] != null
           ? DateTime.parse(json['start_date'])

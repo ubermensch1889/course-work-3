@@ -15,7 +15,8 @@ enum FilterType {
   vacationRequest,
   vacationApproved,
   vacationDenied,
-  attendanceAdded
+  attendanceAdded,
+  generic
 }
 
 class NoticePage extends StatefulWidget {
@@ -107,6 +108,8 @@ class NoticePageState extends State<NoticePage> {
         return notificationType == 'vacation_denied';
       case FilterType.attendanceAdded:
         return notificationType == 'attendance_added';
+      case FilterType.generic:
+        return notificationType == 'generic';
       default:
         return false;
     }
@@ -229,6 +232,20 @@ class NoticePageState extends State<NoticePage> {
                   ),
                   onTap: () {
                     applyFilter(FilterType.byDate, ascending: true);
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ListTile(
+                  title: const Text(
+                    'Общая информация',
+                    style: TextStyle(
+                      fontFamily: 'CeraPro',
+                      fontSize: 18,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                  onTap: () {
+                    applyFilter(FilterType.generic);
                     Navigator.of(context).pop();
                   },
                 ),

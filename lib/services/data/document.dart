@@ -3,7 +3,7 @@ class DocumentItem {
   final String name;
   final bool signRequired;
   final String description;
-  bool isSigned; // предполагаем, что поле может изменяться
+  bool isSigned;
 
   DocumentItem({
     required this.id,
@@ -15,11 +15,11 @@ class DocumentItem {
 
   factory DocumentItem.fromJson(Map<String, dynamic> json) {
     return DocumentItem(
-      id: json['id'],
-      name: json['name'],
-      signRequired: json['sign_required'] as bool,
-      description: json['description'],
-      isSigned: json['is_signed'] as bool? ?? false,
+      id: json['id'] as String,
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      signRequired: json['sign_required'] as bool? ?? false,
+      isSigned: json['signed'] as bool? ?? false,
     );
   }
 

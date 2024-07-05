@@ -60,17 +60,24 @@ class DocumentsListScreenState extends State<DocumentsListScreen> {
 
   Future<File> _downloadFile(String url) async {
     var response = await http.get(Uri.parse(url));
-    var bytes = response.bodyBytes;
-    var dir = await getApplicationDocumentsDirectory();
-    File file =
-        File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}.pdf');
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
+    if (response.statusCode == 200) {
+      var bytes = response.bodyBytes;
+      if (bytes.isEmpty) {
+        throw Exception('Received empty file');
+      }
+      var dir = await getApplicationDocumentsDirectory();
+      File file =
+          File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}.pdf');
+      await file.writeAsBytes(bytes, flush: true);
+      return file;
+    } else {
+      throw Exception('Failed to download file: ${response.statusCode}');
+    }
   }
 
   void openPDF(File file) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => PDFViewPage(file: file)),
+      MaterialPageRoute(builder: (context) => DocumentViewPage(file: file)),
     );
   }
 
@@ -125,7 +132,9 @@ class DocumentsListScreenState extends State<DocumentsListScreen> {
                                   ? Colors.green
                                   : const Color.fromARGB(255, 22, 79, 148),
                             ),
-                            onPressed: () => _signDocument(document.id, index),
+                            onPressed: document.isSigned
+                                ? null
+                                : () => _signDocument(document.id, index),
                           ),
                         IconButton(
                           icon: const Icon(Icons.download),
@@ -180,10 +189,17 @@ class DocumentsListScreenState extends State<DocumentsListScreen> {
   }
 }
 
-class PDFViewPage extends StatelessWidget {
+class DocumentViewPage extends StatefulWidget {
   final File file;
 
-  const PDFViewPage({Key? key, required this.file}) : super(key: key);
+  const DocumentViewPage({Key? key, required this.file}) : super(key: key);
+
+  @override
+  DocumentViewPageState createState() => DocumentViewPageState();
+}
+
+class DocumentViewPageState extends State<DocumentViewPage> {
+  bool _isLoading = true;
 
   @override
   Widget build(BuildContext context) {
@@ -191,28 +207,36 @@ class PDFViewPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("PDF Document"),
       ),
-      body: PDFView(
-        filePath: file.path,
-        enableSwipe: true,
-        swipeHorizontal: true,
-        autoSpacing: true,
-        pageFling: true,
-        onRender: (_pages) {},
-        onError: (error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error opening document: $error")),
-          );
-        },
-        onPageError: (page, error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error on page $page: $error")),
-          );
-        },
-        onViewCreated: (PDFViewController pdfViewController) {},
-        onPageChanged: (int? page, int? total) {
-          // ignore: avoid_print
-          print('page change: $page/$total');
-        },
+      body: Stack(
+        children: <Widget>[
+          PDFView(
+            filePath: widget.file.path,
+            enableSwipe: true,
+            swipeHorizontal: true,
+            autoSpacing: true,
+            pageFling: true,
+            onRender: (_pages) {
+              setState(() {
+                _isLoading = false;
+              });
+            },
+            onError: (error) {
+              setState(() {
+                _isLoading = false;
+              });
+              print("Error rendering PDF: $error");
+            },
+            onPageError: (page, error) {
+              print("Error on page $page: $error");
+            },
+            onViewCreated: (PDFViewController pdfViewController) {},
+            onPageChanged: (int? page, int? total) {},
+          ),
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
+        ],
       ),
     );
   }

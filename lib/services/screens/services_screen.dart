@@ -24,31 +24,33 @@ class ServicesPage extends StatelessWidget {
           ),
         ),
       ),
-      body: Navigator(
-        key: _navigatorKey,
-        onGenerateRoute: (RouteSettings settings) {
-          WidgetBuilder builder;
-          switch (settings.name) {
-            case '/':
-              builder = (BuildContext _) => _servicesGrid(context);
-              break;
-            case '/documents':
-              builder = (BuildContext _) => const DocumentsListScreen();
-              break;
-            case '/absence':
-              builder = (BuildContext _) => const AbsenceRequestScreen();
-              break;
-            case '/income':
-              builder = (BuildContext _) => const PaymentsScreen();
-              break;
-            case '/attendance':
-              builder = (BuildContext _) => const AttendanceScreen();
-              break;
-            default:
-              throw Exception('Invalid route: ${settings.name}');
-          }
-          return MaterialPageRoute(builder: builder, settings: settings);
-        },
+      body: SafeArea(
+        child: Navigator(
+          key: _navigatorKey,
+          onGenerateRoute: (RouteSettings settings) {
+            WidgetBuilder builder;
+            switch (settings.name) {
+              case '/':
+                builder = (BuildContext _) => _servicesGrid(context);
+                break;
+              case '/documents':
+                builder = (BuildContext _) => const DocumentsListScreen();
+                break;
+              case '/absence':
+                builder = (BuildContext _) => const AbsenceRequestScreen();
+                break;
+              case '/income':
+                builder = (BuildContext _) => const PaymentsScreen();
+                break;
+              case '/attendance':
+                builder = (BuildContext _) => const AttendanceScreen();
+                break;
+              default:
+                throw Exception('Invalid route: ${settings.name}');
+            }
+            return MaterialPageRoute(builder: builder, settings: settings);
+          },
+        ),
       ),
     );
   }

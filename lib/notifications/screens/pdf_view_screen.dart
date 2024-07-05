@@ -20,10 +20,9 @@ class PDFViewPage extends StatelessWidget {
               swipeHorizontal: true,
             ),
           ),
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: ElevatedButton(
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            /*child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 22, 79, 148),
@@ -39,7 +38,7 @@ class PDFViewPage extends StatelessWidget {
                     fontSize: 18,
                     color: Color.fromARGB(255, 245, 245, 245)),
               ),
-            ),
+            ),*/
           ),
         ],
       ),

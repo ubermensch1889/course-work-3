@@ -1,5 +1,7 @@
 import 'dart:io';
-
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -13,14 +15,33 @@ import 'package:test/profile/screens/profile_screen.dart';
 import 'package:test/search/screens/search_screen.dart';
 import 'package:test/services/screens/services_screen.dart';
 import 'package:test/start/screens/start_screen.dart';
+import 'package:test/user/domain/firebase_api.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru_RU', null);
 
   HttpOverrides.global = _MyHttpOverrides();
-
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await FirebaseAPI().initNotifications();
+  FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    analytics.logEvent(
+      name: 'notification_received',
+      parameters: {
+        'title': message.notification?.title,
+        'body': message.notification?.body,
+      },
+    );
+  });
   runApp(const ProviderScope(child: MyApp()));
+}
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print('Handling a background message: ${message.messageId}');
 }
 
 class _MyHttpOverrides extends HttpOverrides {

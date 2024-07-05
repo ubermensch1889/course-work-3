@@ -11,21 +11,29 @@ class DocumentsService {
     }
 
     final url = Uri.parse('https://working-day.online:8080/v1/documents/list');
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      List<dynamic> body =
-          json.decode(utf8.decode(response.bodyBytes))['documents'];
-      List<DocumentItem> documents =
-          body.map((dynamic item) => DocumentItem.fromJson(item)).toList();
-      return documents;
-    } else {
-      throw Exception('Failed to load documents: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        print('Ответ сервера: ${utf8.decode(response.bodyBytes)}');
+        List<dynamic> body =
+            json.decode(utf8.decode(response.bodyBytes))['documents'];
+        List<DocumentItem> documents =
+            body.map((dynamic item) => DocumentItem.fromJson(item)).toList();
+        return documents;
+      } else {
+        print('Ошибка загрузки документов: ${response.statusCode}');
+        print('Ответ: ${response.body}');
+        throw Exception('Failed to load documents: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Исключение при загрузке документов: $e');
+      throw Exception('Exception during fetchDocuments: $e');
     }
   }
 
@@ -36,7 +44,7 @@ class DocumentsService {
     }
 
     final url = Uri.parse(
-        'http://working-day.online:8080/v1/documents/download?id=$documentId');
+        'https://working-day.online:8080/v1/documents/download?id=$documentId');
     final response = await http.get(
       url,
       headers: {
@@ -60,7 +68,7 @@ class DocumentsService {
     }
 
     final url = Uri.parse(
-        'http://working-day.online:8080/v1/documents/sign?document_id=$documentId');
+        'https://working-day.online:8080/v1/documents/sign?document_id=$documentId');
     try {
       final response = await http.post(
         url,
@@ -72,12 +80,10 @@ class DocumentsService {
       if (response.statusCode == 200) {
         print("Документ успешно подписан.");
       } else {
-        // Ошибка сервера
         print("Ошибка подписания документа: ${response.statusCode}");
         print("Тело ответа: ${response.body}");
       }
     } catch (e) {
-      // Ошибка выполнения HTTP запроса
       print("Исключение при попытке подписать документ: $e");
     }
   }

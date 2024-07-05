@@ -16,31 +16,36 @@ class AttendanceScreenState extends State<AttendanceScreen> {
   bool _isLoading = false;
   DateTime? _selectedDate;
 
-  final Map<String, TextEditingController> _startControllers = {};
-  final Map<String, TextEditingController> _endControllers = {};
+  final Map<String, TextEditingController> _hoursWorkedControllers = {};
   final Map<String, bool> _absenceStatus = {};
 
   @override
   void dispose() {
-    _startControllers.forEach((_, controller) => controller.dispose());
-    _endControllers.forEach((_, controller) => controller.dispose());
+    _hoursWorkedControllers.forEach((_, controller) => controller.dispose());
     super.dispose();
   }
 
-  Future<void> _saveAttendance(
-      String employeeId, DateTime startDate, DateTime endDate) async {
+  Future<void> _saveAttendance(String employeeId, int hoursWorked) async {
     if (_absenceStatus[employeeId] == true) {
       _showErrorDialog('Сотрудник отсутствовал, сохранение не требуется.');
       return;
     }
     try {
+      DateTime startDate = DateTime(
+          _selectedDate!.year, _selectedDate!.month, _selectedDate!.day, 9);
+      DateTime endDate = startDate.add(Duration(hours: hoursWorked));
+
       String formattedStart =
           DateFormat('yyyy-MM-ddTHH:mm:ss').format(startDate);
       String formattedEnd = DateFormat('yyyy-MM-ddTHH:mm:ss').format(endDate);
       await AttendanceService.addAttendance(
           employeeId, formattedStart, formattedEnd);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Посещение сохранено')),
+        const SnackBar(
+          content: Text('Данные успешно сохранены!'),
+          backgroundColor: Color.fromARGB(255, 22, 79, 148),
+          behavior: SnackBarBehavior.fixed,
+        ),
       );
     } catch (e) {
       _showErrorDialog('Ошибка добавления посещения: $e');
@@ -77,21 +82,21 @@ class AttendanceScreenState extends State<AttendanceScreen> {
       List<AttendanceRecord> attendances =
           await AttendanceService.fetchAllAttendances(start, end);
 
-      // Initialize text controllers with server-provided times
-      for (var attendance in attendances) {
-        _startControllers[attendance.employeeId] = TextEditingController(
-            text: attendance.startDate != null
-                ? DateFormat('HH:mm').format(attendance.startDate!)
-                : '');
-        _endControllers[attendance.employeeId] = TextEditingController(
-            text: attendance.endDate != null
-                ? DateFormat('HH:mm').format(attendance.endDate!)
-                : '');
-      }
-
       setState(() {
         _attendances.clear();
         _attendances.addAll(attendances);
+        for (var attendance in _attendances) {
+          int hoursWorked = 0;
+          if (attendance.startDate != null && attendance.endDate != null) {
+            Duration difference =
+                attendance.endDate!.difference(attendance.startDate!);
+            hoursWorked = difference.inHours;
+          }
+          _hoursWorkedControllers[attendance.employeeId] =
+              TextEditingController(text: hoursWorked.toString());
+
+          _absenceStatus[attendance.employeeId] = false;
+        }
       });
     } catch (e) {
       _showErrorDialog(e.toString());
@@ -130,7 +135,7 @@ class AttendanceScreenState extends State<AttendanceScreen> {
                       ),
                       onPressed: () => _selectDate(context),
                       child: Text(
-                        'Дата: ${_selectedDate!.day.toString().padLeft(2, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.year}',
+                        'Дата: ${_selectedDate?.day.toString().padLeft(2, '0')}-${_selectedDate?.month.toString().padLeft(2, '0')}-${_selectedDate?.year}',
                         style: const TextStyle(
                             fontFamily: 'CeraPro',
                             color: Color.fromARGB(255, 245, 245, 245)),
@@ -159,28 +164,43 @@ class AttendanceScreenState extends State<AttendanceScreen> {
                         var attendance = _attendances[index];
                         var employeeId = attendance.employeeId;
 
-                        DateTime now = DateTime.now();
-                        String defaultTime = DateFormat('HH:mm').format(now);
-
-                        _startControllers.putIfAbsent(employeeId,
-                            () => TextEditingController(text: defaultTime));
-                        _endControllers.putIfAbsent(employeeId,
-                            () => TextEditingController(text: defaultTime));
+                        _hoursWorkedControllers[attendance.employeeId] =
+                            TextEditingController(text: '');
 
                         return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 8.0, horizontal: 16.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                            side: BorderSide(
+                              color: _absenceStatus[employeeId] == true
+                                  ? Colors.red
+                                  : const Color.fromARGB(255, 22, 79, 148),
+                              width: 1.0,
+                            ),
+                          ),
                           child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                            padding: const EdgeInsets.all(16.0),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Text(
+                                  '${attendance.surname} ${attendance.name} ${attendance.patronymic ?? ""}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16.0,
+                                  ),
+                                ),
+                                const SizedBox(height: 8.0),
                                 Row(
                                   children: [
-                                    Expanded(
+                                    const Expanded(
                                       flex: 3,
                                       child: Text(
-                                        '${attendance.name} ${attendance.surname} ${attendance.patronymic ?? ""}',
-                                        style: const TextStyle(
+                                        'Отработано часов:',
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 14.0,
                                         ),
                                       ),
                                     ),
@@ -188,88 +208,52 @@ class AttendanceScreenState extends State<AttendanceScreen> {
                                       flex: 2,
                                       child: TextField(
                                         controller:
-                                            _startControllers[employeeId],
+                                            _hoursWorkedControllers[employeeId],
                                         decoration: const InputDecoration(
-                                          labelText: 'Начало',
-                                          hintText: 'HH:mm',
+                                          labelText: 'Часы',
+                                          hintText: '0',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(
+                                              vertical: 4.0, horizontal: 8.0),
                                         ),
-                                        keyboardType: TextInputType.datetime,
-                                        enabled: !(_absenceStatus[employeeId] ??
-                                            false),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: TextField(
-                                        controller: _endControllers[employeeId],
-                                        decoration: const InputDecoration(
-                                          labelText: 'Конец',
-                                          hintText: 'HH:mm',
-                                        ),
-                                        keyboardType: TextInputType.datetime,
-                                        enabled: !(_absenceStatus[employeeId] ??
-                                            false),
+                                        keyboardType: TextInputType.number,
                                       ),
                                     ),
                                     Expanded(
                                       child: IconButton(
-                                        icon: const FaIcon(
-                                            FontAwesomeIcons.userSlash),
+                                        icon: FaIcon(
+                                          FontAwesomeIcons.userSlash,
+                                          color:
+                                              _absenceStatus[employeeId] == true
+                                                  ? Colors.red
+                                                  : Colors.black,
+                                        ),
                                         onPressed: () =>
                                             _toggleAbsence(employeeId),
-                                        color:
-                                            _absenceStatus[employeeId] == true
-                                                ? Colors.red
-                                                : Colors.black,
                                       ),
                                     ),
                                     Expanded(
-                                        flex: 1,
-                                        child: IconButton(
-                                          icon: const FaIcon(
-                                              FontAwesomeIcons.solidFloppyDisk),
-                                          onPressed: () {
-                                            if (_startControllers[employeeId]
-                                                        ?.text
-                                                        .isNotEmpty ==
-                                                    true &&
-                                                _endControllers[employeeId]
-                                                        ?.text
-                                                        .isNotEmpty ==
-                                                    true) {
-                                              try {
-                                                String startDateString =
-                                                    _startControllers[
-                                                            employeeId]!
-                                                        .text;
-                                                String endDateString =
-                                                    _endControllers[employeeId]!
-                                                        .text;
-
-                                                // Assuming the date is selected using _selectedDate and the time is entered in HH:mm format
-                                                DateTime startDate = DateFormat(
-                                                        'yyyy-MM-dd HH:mm')
-                                                    .parse(
-                                                  '${_selectedDate!.toIso8601String().split('T')[0]} $startDateString',
-                                                );
-                                                DateTime endDate = DateFormat(
-                                                        'yyyy-MM-dd HH:mm')
-                                                    .parse(
-                                                  '${_selectedDate!.toIso8601String().split('T')[0]} $endDateString',
-                                                );
-
-                                                _saveAttendance(employeeId,
-                                                    startDate, endDate);
-                                              } catch (e) {
-                                                _showErrorDialog(
-                                                    'Ошибка парсинга времени: $e');
-                                              }
-                                            } else {
-                                              _showErrorDialog(
-                                                  'Время начала или окончания отсутствует.');
-                                            }
-                                          },
-                                        )),
+                                      flex: 1,
+                                      child: IconButton(
+                                        icon: const FaIcon(
+                                          FontAwesomeIcons.solidFloppyDisk,
+                                          color:
+                                              Color.fromARGB(255, 22, 79, 148),
+                                        ),
+                                        onPressed: () {
+                                          final hoursWorkedText =
+                                              _hoursWorkedControllers[
+                                                          employeeId]
+                                                      ?.text ??
+                                                  '';
+                                          final hoursWorked =
+                                              int.tryParse(hoursWorkedText) ??
+                                                  0;
+                                          _saveAttendance(
+                                              employeeId, hoursWorked);
+                                        },
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -307,6 +291,23 @@ class AttendanceScreenState extends State<AttendanceScreen> {
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2025),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color.fromARGB(255, 22, 79, 148),
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color.fromARGB(255, 22, 79, 148),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {

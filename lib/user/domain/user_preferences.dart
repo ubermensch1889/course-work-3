@@ -7,6 +7,7 @@ import 'package:test/user/data/user_action.dart';
 class UserPreferences {
   static Future<void> saveToken(String token) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
+    print("Saving token: $token");
     await prefs.setString('auth_token', token);
   }
 
@@ -33,7 +34,9 @@ class UserPreferences {
 
   static Future<void> logout() async {
     if (_prefs == null) await init();
+    print("Logging out. Current token: ${_prefs!.getString('auth_token')}");
     await _prefs!.clear();
+    print("Logged out. Current token: ${_prefs!.getString('auth_token')}");
   }
 
   static Future<User> fetchProfileInfo() async {

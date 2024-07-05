@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:test/auth/domain/auth_notifier.dart';
+import 'package:test/auth/screens/auth_screen.dart';
 import 'package:test/profile/domain/profile_service.dart';
 import 'package:test/profile/screens/edit_profile_page.dart';
-import 'package:test/start/screens/start_screen.dart';
 import 'package:test/user/data/user.dart';
 import 'package:test/user/domain/user_preferences.dart';
 
@@ -68,10 +68,12 @@ class ProfileContentState extends State<ProfileContent> {
                       break;
                     case 'logout':
                       await UserPreferences.logout();
-                      ref.read(authStateProvider.notifier).logout();
-                      Navigator.of(context).pushReplacement(MaterialPageRoute(
-                        builder: (context) => const StartScreen(),
-                      ));
+                      ref.read(authStateProvider.notifier).state = false;
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                            builder: (context) => const AuthScreen()),
+                        (route) => false,
+                      );
                       break;
                   }
                 },
@@ -80,12 +82,6 @@ class ProfileContentState extends State<ProfileContent> {
                     const PopupMenuItem<String>(
                       value: 'edit_profile',
                       child: Text('Редактировать профиль',
-                          style:
-                              TextStyle(fontFamily: 'CeraPro', fontSize: 16)),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'logout',
-                      child: Text('Выйти из аккаунта',
                           style:
                               TextStyle(fontFamily: 'CeraPro', fontSize: 16)),
                     ),
@@ -141,6 +137,7 @@ class ProfileContentState extends State<ProfileContent> {
                       bottom: -10,
                       right: -10,
                       child: FloatingActionButton(
+                        heroTag: null,
                         mini: true,
                         onPressed: pickAndUploadImage,
                         backgroundColor: const Color.fromARGB(255, 22, 79, 148),
@@ -154,7 +151,7 @@ class ProfileContentState extends State<ProfileContent> {
                 ),
                 const SizedBox(height: 15),
                 Text(
-                  '${user.name} ${user.surname} ${user.patronymic}',
+                  '${user.surname} ${user.name} ${user.patronymic}',
                   style: const TextStyle(fontFamily: 'CeraPro', fontSize: 18),
                 ),
                 const SizedBox(height: 15),

@@ -129,7 +129,6 @@ class SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSearchResults() {
-    // Изменено для использования Card, как во втором коде
     return Expanded(
       child: !_isSearchPerformed
           ? Container()
@@ -164,7 +163,7 @@ class SearchPageState extends State<SearchPage> {
                         elevation: 0,
                         child: ListTile(
                           title: Text(
-                            '${user.name} ${user.surname} ${user.patronymic ?? ""}',
+                            '${user.surname} ${user.name} ${user.patronymic ?? ""}',
                             style: const TextStyle(
                               fontFamily: 'CeraPro',
                               color: Color.fromARGB(255, 22, 79, 148),
