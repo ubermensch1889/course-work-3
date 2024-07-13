@@ -1,30 +1,54 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 import 'package:test/main.dart';
+import 'package:test/start/screens/start_screen.dart';
+import 'package:test/user/domain/user_preferences_wrapper.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// Генерация мок-класса для UserPreferencesWrapper
+@GenerateMocks([UserPreferencesWrapper])
+import 'widget_test.mocks.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  final mockUserPreferencesWrapper = MockUserPreferencesWrapper();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  setUp(() {
+    reset(mockUserPreferencesWrapper);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('Auto authentication test with token',
+      (WidgetTester tester) async {
+    when(mockUserPreferencesWrapper.getToken())
+        .thenAnswer((_) async => 'mocked_token');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userPreferencesProvider.overrideWithValue(mockUserPreferencesWrapper),
+        ],
+        child: const MyApp(isAuthenticated: true),
+      ),
+    );
+
     await tester.pump();
+    expect(find.byType(Home), findsOneWidget);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('Auto authentication test without token',
+      (WidgetTester tester) async {
+    when(mockUserPreferencesWrapper.getToken()).thenAnswer((_) async => null);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userPreferencesProvider.overrideWithValue(mockUserPreferencesWrapper),
+        ],
+        child: const MyApp(isAuthenticated: false),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.byType(StartScreen), findsOneWidget);
   });
 }

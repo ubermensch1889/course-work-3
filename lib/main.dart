@@ -8,7 +8,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:test/auth/domain/auth_manager.dart';
 import 'package:test/calendar/screens/calendar_screen.dart';
-import 'package:test/start/data/navigator_check.dart';
 import 'package:test/start/screens/nav_bar.dart';
 import 'package:test/notifications/screens/notification_screen.dart';
 import 'package:test/profile/screens/profile_screen.dart';
@@ -16,6 +15,12 @@ import 'package:test/search/screens/search_screen.dart';
 import 'package:test/services/screens/services_screen.dart';
 import 'package:test/start/screens/start_screen.dart';
 import 'package:test/user/domain/firebase_api.dart';
+import 'package:test/user/domain/user_preferences.dart';
+import 'package:test/user/domain/user_preferences_wrapper.dart';
+
+final userPreferencesProvider = Provider<UserPreferencesWrapper>((ref) {
+  return UserPreferencesWrapper();
+});
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,11 +41,29 @@ void main() async {
       },
     );
   });
-  runApp(const ProviderScope(child: MyApp()));
+
+  await UserPreferences.init(); // Инициализация SharedPreferences
+  bool isAuthenticated = await checkToken();
+
+  runApp(
+    ProviderScope(
+      child: MyApp(isAuthenticated: isAuthenticated),
+    ),
+  );
+}
+
+Future<bool> checkToken() async {
+  String? token = await UserPreferences.getToken();
+  if (token != null && token.isNotEmpty) {
+    // Здесь можно добавить дополнительную проверку токена на сервере, если необходимо
+    return true;
+  }
+  return false;
 }
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  // ignore: avoid_print
   print('Handling a background message: ${message.messageId}');
 }
 
@@ -58,10 +81,15 @@ final authManagerProvider = Provider<AuthManager>((ref) => AuthManager());
 final selectedIndexProvider = StateProvider<int>((ref) => 0);
 
 class MyApp extends ConsumerWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final bool isAuthenticated;
+  const MyApp({Key? key, required this.isAuthenticated}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authStateProvider.notifier).state = isAuthenticated;
+    });
+
     final isAuthorized = ref.watch(authStateProvider);
 
     return MaterialApp(
@@ -76,7 +104,6 @@ class MyApp extends ConsumerWidget {
       ],
       locale: const Locale('ru', 'RU'),
       home: isAuthorized ? const Home() : const StartScreen(),
-      navigatorObservers: [MyNavigatorObserver()],
     );
   }
 }

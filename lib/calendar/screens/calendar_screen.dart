@@ -69,6 +69,7 @@ class CalendarPageState extends State<CalendarPage> {
 
       _approvedVacationIds.value = newApprovedIds;
     } catch (e) {
+      // ignore: avoid_print
       print('Error fetching notifications: $e');
     }
   }

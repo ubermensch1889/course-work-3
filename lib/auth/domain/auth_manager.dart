@@ -6,7 +6,7 @@ import 'package:test/user/domain/user_preferences.dart';
 
 class AuthManager {
   Future<bool> authenticate(
-      String login, String password, String company_id, WidgetRef ref) async {
+      String login, String password, String companyId, WidgetRef ref) async {
     await UserPreferences.logout();
 
     final url = Uri.parse('https://working-day.online:8080/v1/authorize');
@@ -16,7 +16,7 @@ class AuthManager {
       body: json.encode({
         'login': login,
         'password': password,
-        'company_id': company_id,
+        'company_id': companyId,
       }),
     );
 

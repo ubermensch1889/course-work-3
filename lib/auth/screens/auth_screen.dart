@@ -14,6 +14,7 @@ class AuthScreenState extends ConsumerState<AuthScreen> {
   late final TextEditingController passwordController;
   late final TextEditingController companyIdController;
   bool passwordVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -128,7 +129,11 @@ class AuthScreenState extends ConsumerState<AuthScreen> {
                           ref,
                         );
                 if (success) {
-                  Navigator.of(context).pop();
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const MyApp(isAuthenticated: true),
+                    ),
+                  );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Ошибка аутентификации')),

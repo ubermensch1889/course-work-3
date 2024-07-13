@@ -69,11 +69,12 @@ class ProfileContentState extends State<ProfileContent> {
                     case 'logout':
                       await UserPreferences.logout();
                       ref.read(authStateProvider.notifier).state = false;
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                            builder: (context) => const AuthScreen()),
-                        (route) => false,
-                      );
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                              builder: (context) => const AuthScreen()),
+                        );
+                      });
                       break;
                   }
                 },
@@ -82,6 +83,12 @@ class ProfileContentState extends State<ProfileContent> {
                     const PopupMenuItem<String>(
                       value: 'edit_profile',
                       child: Text('Редактировать профиль',
+                          style:
+                              TextStyle(fontFamily: 'CeraPro', fontSize: 16)),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Text('Выйти',
                           style:
                               TextStyle(fontFamily: 'CeraPro', fontSize: 16)),
                     ),
@@ -111,9 +118,9 @@ class ProfileContentState extends State<ProfileContent> {
   }
 
   Widget buildUserProfile(User user) {
-    double screnWidth = MediaQuery.of(context).size.width;
+    double screenWidth = MediaQuery.of(context).size.width;
     double padding = 20.0 * 2;
-    double cardWidth = screnWidth - padding;
+    double cardWidth = screenWidth - padding;
     return SingleChildScrollView(
       child: Column(
         children: [

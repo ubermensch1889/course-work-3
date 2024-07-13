@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
@@ -215,7 +217,7 @@ class DocumentViewPageState extends State<DocumentViewPage> {
             swipeHorizontal: true,
             autoSpacing: true,
             pageFling: true,
-            onRender: (_pages) {
+            onRender: (pages) {
               setState(() {
                 _isLoading = false;
               });
