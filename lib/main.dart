@@ -42,7 +42,7 @@ void main() async {
     );
   });
 
-  await UserPreferences.init(); // Инициализация SharedPreferences
+  await UserPreferences.init();
   bool isAuthenticated = await checkToken();
 
   runApp(
@@ -55,7 +55,6 @@ void main() async {
 Future<bool> checkToken() async {
   String? token = await UserPreferences.getToken();
   if (token != null && token.isNotEmpty) {
-    // Здесь можно добавить дополнительную проверку токена на сервере, если необходимо
     return true;
   }
   return false;
