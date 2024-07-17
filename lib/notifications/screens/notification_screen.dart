@@ -455,7 +455,7 @@ class _NotificationCardState extends State<NotificationCard> {
                             context, widget.notification.actionId),
                       ],
                     ),
-                  if (widget.notification.type == 'vacation_approved')
+                  /*if (widget.notification.type == 'vacation_approved')
                     Padding(
                       padding: const EdgeInsets.only(top: 8, left: 46),
                       child: ElevatedButton(
@@ -472,7 +472,7 @@ class _NotificationCardState extends State<NotificationCard> {
                               color: Color.fromARGB(255, 245, 245, 245)),
                         ),
                       ),
-                    ),
+                    ),*/
                 ],
               ),
             ),

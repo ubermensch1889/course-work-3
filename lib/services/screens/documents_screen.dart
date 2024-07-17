@@ -165,7 +165,7 @@ class DocumentsListScreenState extends State<DocumentsListScreen> {
           Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: ElevatedButton(
+            /*child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 22, 79, 148),
@@ -183,7 +183,7 @@ class DocumentsListScreenState extends State<DocumentsListScreen> {
                   color: Color.fromARGB(255, 245, 245, 245),
                 ),
               ),
-            ),
+            ),*/
           ),
         ],
       ),

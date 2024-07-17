@@ -57,7 +57,7 @@ class ServicesPage extends StatelessWidget {
 
   Widget _servicesGrid(BuildContext context) {
     return FutureBuilder<String?>(
-      future: UserPreferences.getRole(), // Получаем роль асинхронно
+      future: UserPreferences.getRole(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done &&
             snapshot.hasData) {

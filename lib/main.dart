@@ -124,9 +124,11 @@ class Home extends ConsumerWidget {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: selectedPageIndex,
-        children: screens,
+      body: SafeArea(
+        child: IndexedStack(
+          index: selectedPageIndex,
+          children: screens,
+        ),
       ),
       bottomNavigationBar: const NavBar(),
     );

@@ -82,7 +82,7 @@ class _UserCalendarPageState extends State<UserCalendarPage> {
                       margin: const EdgeInsets.symmetric(horizontal: 1.0),
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.green, // Зеленый для посещений
+                        color: Colors.green,
                       ),
                       width: 7.0,
                       height: 7.0,
@@ -94,7 +94,7 @@ class _UserCalendarPageState extends State<UserCalendarPage> {
                       margin: const EdgeInsets.symmetric(horizontal: 1.0),
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.purple, // Фиолетовый для отпусков
+                        color: Colors.purple,
                       ),
                       width: 7.0,
                       height: 7.0,

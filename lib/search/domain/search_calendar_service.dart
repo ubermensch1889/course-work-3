@@ -7,8 +7,6 @@ class SearchCalendarService {
     final from = start.toIso8601String();
     final to = end.toIso8601String();
 
-    // This is a placeholder for your actual call to fetch user actions,
-    // which now includes a `userId` to filter actions for a specific user.
     final userActions =
         await UserPreferences.fetchUserActions(from, to, userId);
 

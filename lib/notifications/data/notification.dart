@@ -21,11 +21,9 @@ class NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      id: json['id'] as String? ??
-          'default_id', // Укажите здесь адекватные значения по умолчанию
+      id: json['id'] as String? ?? 'default_id',
       type: json['type'] as String? ?? 'default_type',
-      isRead: json['is_read'] ??
-          false, // Если isRead может быть null, установите значение по умолчанию
+      isRead: json['is_read'] ?? false,
       text: json['text'] as String? ?? 'default_text',
       created: json['created'] as String? ?? 'default_created',
       actionId: json['action_id'] as String? ?? 'default_action_id',

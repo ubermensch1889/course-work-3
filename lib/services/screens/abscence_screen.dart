@@ -30,6 +30,15 @@ class AbsenceRequestScreenState extends State<AbsenceRequestScreen> {
     super.dispose();
   }
 
+  void clearDates() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+      _startDateController?.clear();
+      _endDateController?.clear();
+    });
+  }
+
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -123,8 +132,7 @@ class AbsenceRequestScreenState extends State<AbsenceRequestScreen> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             ),
             controller: controller,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 16.0), // White text styling
+            style: const TextStyle(color: Colors.white, fontSize: 16.0),
           ),
         ),
       ),
@@ -228,18 +236,13 @@ class AbsenceRequestScreenState extends State<AbsenceRequestScreen> {
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _startDate = null;
-                          _endDate = null;
-                        });
-                      },
+                      onPressed: clearDates,
                       child: const Text('Отмена'),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         foregroundColor: const Color(0xFF164F94),
-                        backgroundColor: Colors.white, // Text color
+                        backgroundColor: Colors.white,
                       ),
                       onPressed: _startDate != null && _endDate != null
                           ? _requestAbsence

@@ -104,20 +104,14 @@ class InfoSection extends StatelessWidget {
         if (user.phones != null && user.phones!.isNotEmpty)
           buildListTile(context, "Телефоны: ", user.phones!.join(", "),
               FontAwesomeIcons.phone),
-        buildListTile(
-            context,
-            "Дата рождения: ",
-            user.birthday ?? "Дата рождения не указана",
+        buildListTile(context, "Дата рождения: ", user.birthday ?? "Не указана",
             FontAwesomeIcons.cakeCandles),
-        buildListTile(context, "Команда: ", user.team ?? "Команда не указана",
+        buildListTile(context, "Команда: ", user.team ?? "Не указана",
             FontAwesomeIcons.users),
-        buildListTile(
-            context,
-            "Телеграм: ",
-            user.telegram_id ?? "Телеграм не указан",
+        buildListTile(context, "Телеграм: ", user.telegram_id ?? "Не указан",
             FontAwesomeIcons.telegram),
         buildListTile(
-            context, "ВК: ", user.vk_id ?? "ВК не указан", FontAwesomeIcons.vk),
+            context, "ВК: ", user.vk_id ?? "Не указан", FontAwesomeIcons.vk),
       ],
     );
   }
