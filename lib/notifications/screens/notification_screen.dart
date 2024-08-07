@@ -570,7 +570,7 @@ class _NotificationCardState extends State<NotificationCard> {
     );
   }
 
-  void _viewPdfDocument(
+  /*void _viewPdfDocument(
       BuildContext context, String actionId, String requestType) async {
     String? token = await UserPreferences.getToken();
     if (token != null) {
@@ -594,7 +594,7 @@ class _NotificationCardState extends State<NotificationCard> {
         );
       }
     }
-  }
+  }*/
 
   Future<File> downloadFile(String url) async {
     var response = await http.get(Uri.parse(url));
