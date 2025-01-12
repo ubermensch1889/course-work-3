@@ -8,7 +8,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:test/auth/domain/auth_manager.dart';
 import 'package:test/calendar/screens/calendar_screen.dart';
-import 'package:test/safe_area.dart';
 import 'package:test/start/screens/nav_bar.dart';
 import 'package:test/notifications/screens/notification_screen.dart';
 import 'package:test/profile/screens/profile_screen.dart';
