@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test/chat/screens/chat_list_screen.dart';
 import 'package:test/services/screens/abscence_screen.dart';
 import 'package:test/services/screens/attendance_screen.dart';
 import 'package:test/services/screens/documents_screen.dart';
@@ -45,6 +46,9 @@ class ServicesPage extends StatelessWidget {
               case '/attendance':
                 builder = (BuildContext _) => const AttendanceScreen();
                 break;
+              case '/chat':
+                builder = (BuildContext _) => const ChatListScreen();
+                break;
               default:
                 throw Exception('Invalid route: ${settings.name}');
             }
@@ -86,6 +90,12 @@ class ServicesPage extends StatelessWidget {
                 'assets/images/vacation_icon.png',
                 'Отпуска',
                 '/absence',
+              ),
+              _buildServiceButton(
+                context,
+                'assets/images/chat_icon.png',
+                'Мессенджер',
+                '/chat',
               ),
               if (role == 'manager')
                 _buildServiceButton(
