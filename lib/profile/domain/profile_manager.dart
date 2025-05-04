@@ -18,7 +18,7 @@ class ProfileManager {
       return false;
     }
 
-    var url = Uri.parse('https://working-day.online:8080/v1/profile/edit');
+    var url = Uri.parse('https://working-day.su:8080/v1/profile/edit');
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

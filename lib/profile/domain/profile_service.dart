@@ -19,7 +19,7 @@ class ProfileService {
       return null;
     }
     var url =
-        Uri.parse('https://working-day.online:8080/v1/profile/upload-photo');
+        Uri.parse('https://working-day.su:8080/v1/profile/upload-photo');
     var headers = {'Authorization': 'Bearer $token'};
     var response = await http.post(url, headers: headers);
     if (response.statusCode == 200) {

@@ -29,22 +29,44 @@ class ChatSearchScreenState extends State<ChatSearchScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: TextField(
-          controller: _searchController,
-          decoration: const InputDecoration(
-            hintText: 'Поиск',
-            border: InputBorder.none,
+          toolbarHeight: 110,
+          centerTitle: false,
+          leading: IconButton(
+              iconSize: 30,
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () {
+                Navigator.of(context).pop();
+              }
           ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.black,
-          tabs: const [
-            Tab(text: 'Личные чаты'),
-            Tab(text: 'Групповые чаты'),
-          ],
-        ),
-      ),
+          leadingWidth: 30,
+          title: TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              hintText: 'Поиск',
+              hintStyle: TextStyle(color: Colors.grey),
+              contentPadding: EdgeInsets.fromLTRB(8, 4, 4, 5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                borderSide: BorderSide(color: Color.fromRGBO(22, 79, 148, 1), width: 3)
+              ),
+            ),
+          ),
+          bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(0.0),
+              child: Column(children: [
+                TabBar(
+                  controller: _tabController,
+                  labelColor: Colors.black,
+                  tabs: const [
+                    Tab(text: 'Личные чаты', height: 30,),
+                    Tab(text: 'Групповые чаты', height: 30,),
+                  ],
+                ),
+                Container(
+                  height: 0.0,
+                  color: const Color.fromRGBO(22, 79, 148, 1),
+                )
+              ]))),
       body: TabBarView(
         controller: _tabController,
         children: [

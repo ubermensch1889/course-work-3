@@ -75,6 +75,8 @@ class _MyHttpOverrides extends HttpOverrides {
   }
 }
 
+final isNavBarVisibleProvider = StateProvider<bool>((ref) => true);
+
 final authStateProvider = StateProvider<bool>((ref) => false);
 final authManagerProvider = Provider<AuthManager>((ref) => AuthManager());
 final selectedIndexProvider = StateProvider<int>((ref) => 0);
@@ -116,22 +118,8 @@ class Home extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedPageIndex = ref.watch(selectedIndexProvider);
 
-    List<Widget> screens = [
-      ServicesPage(),
-      const SearchPage(),
-      const CalendarPage(),
-      const NoticePage(),
-      const ProfileContent(),
-    ];
-
-    return Scaffold(
-      body: SafeArea(
-        child: IndexedStack(
-          index: selectedPageIndex,
-          children: screens,
-        ),
-      ),
-      bottomNavigationBar: const NavBar(),
+    return const Scaffold(
+      bottomNavigationBar: NavBar(),
     );
   }
 }

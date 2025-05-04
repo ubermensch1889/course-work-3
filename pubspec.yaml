@@ -51,6 +51,8 @@ dependencies:
   firebase_analytics: ^10.10.4
   mockito: ^5.4.4
   build_runner: ^2.4.9
+  bubble: ^1.1.9+1
+  web_socket_channel: ^3.0.1
 
   
 dev_dependencies:

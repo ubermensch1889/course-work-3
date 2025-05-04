@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:test/user/domain/user_preferences.dart';
 
 class AttendanceService {
-  static const String _baseUrl = 'https://working-day.online:8080/v1';
+  static const String _baseUrl = 'https://working-day.su:8080/v1';
 
   static Future<void> addAttendance(
       String employeeId, String startDate, String endDate) async {

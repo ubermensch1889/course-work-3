@@ -7,6 +7,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/user/data/user_action.dart';
 
 class UserPreferences {
+  static Future<void> saveCompanyId(String companyId) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    print("Saving company_id: $companyId");
+    await prefs.setString('company_id', companyId);
+  }
+
+  static Future<String?> getCompanyId() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('company_id');
+  }
+
   static Future<void> saveToken(String token) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     print("Saving token: $token");
@@ -28,6 +39,15 @@ class UserPreferences {
     return prefs.getString('user_role');
   }
 
+  static Future<String> getUserId() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    var userId = prefs.getString('user_id');
+    userId ??= (await fetchProfileInfo()).id;
+
+    return userId;
+  }
+
   static SharedPreferences? _prefs;
 
   static Future<void> init() async {
@@ -47,7 +67,7 @@ class UserPreferences {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('https://working-day.online:8080/v1/employee/info');
+    var url = Uri.parse('https://working-day.su:8080/v1/employee/info');
     var headers = {
       'Authorization': 'Bearer $token',
     };
@@ -56,7 +76,12 @@ class UserPreferences {
     if (response.statusCode == 200) {
       var responseBody = utf8.decode(response.bodyBytes);
       var userData = jsonDecode(responseBody);
-      return User.fromJson(userData);
+      var user = User.fromJson(userData);
+
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString('user_id', user.id);
+
+      return user;
     } else {
       throw Exception('Ошибка сервера: ${response.statusCode}');
     }
@@ -68,7 +93,7 @@ class UserPreferences {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('https://working-day.online:8080/v1/employee/info')
+    var url = Uri.parse('https://working-day.su:8080/v1/employee/info')
         .replace(queryParameters: {'employee_id': userId});
     var headers = {'Authorization': 'Bearer $token'};
 
@@ -89,7 +114,7 @@ class UserPreferences {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('https://working-day.online:8080/v1/actions');
+    var url = Uri.parse('https://working-day.su:8080/v1/actions');
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

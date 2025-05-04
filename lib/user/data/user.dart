@@ -1,7 +1,7 @@
 class User {
-  final String? id;
-  final String? name;
-  final String? surname;
+  final String id;
+  final String name;
+  final String surname;
   final String? patronymic;
   final List<String>? phones;
   final String? email;

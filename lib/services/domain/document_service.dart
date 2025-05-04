@@ -12,7 +12,7 @@ class DocumentsService {
       throw Exception('Токен не существует');
     }
 
-    final url = Uri.parse('https://working-day.online:8080/v1/documents/list');
+    final url = Uri.parse('https://working-day.su:8080/v1/documents/list');
     try {
       final response = await http.get(
         url,
@@ -46,7 +46,7 @@ class DocumentsService {
     }
 
     final url = Uri.parse(
-        'https://working-day.online:8080/v1/documents/download?id=$documentId');
+        'https://working-day.su:8080/v1/documents/download?id=$documentId');
     final response = await http.get(
       url,
       headers: {
@@ -70,7 +70,7 @@ class DocumentsService {
     }
 
     final url = Uri.parse(
-        'https://working-day.online:8080/v1/documents/sign?document_id=$documentId');
+        'https://working-day.su:8080/v1/documents/sign?document_id=$documentId');
     try {
       final response = await http.post(
         url,

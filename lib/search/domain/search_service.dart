@@ -11,7 +11,7 @@ class SearchService {
     }
 
     final response = await http.post(
-      Uri.parse('https://working-day.online:8080/v1/search/full'),
+      Uri.parse('https://working-day.su:8080/v1/search/full'),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -39,7 +39,7 @@ class SearchService {
     }
 
     final response = await http.post(
-      Uri.parse('https://working-day.online:8080/v1/search/suggest'),
+      Uri.parse('https://working-day.su:8080/v1/search/suggest'),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

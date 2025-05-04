@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 class NotificationService {
   Future<NotificationsResponse> fetchNotifications(String token) async {
-    const url = 'https://working-day.online:8080/v1/notifications';
+    const url = 'https://working-day.su:8080/v1/notifications';
     final response = await http.post(
       Uri.parse(url),
       headers: {
@@ -26,7 +26,7 @@ class NotificationService {
 
   Future<bool> sendAbsenceVerdict(
       String token, String actionId, bool approve) async {
-    const url = 'https://working-day.online:8080/v1/absence/verdict';
+    const url = 'https://working-day.su:8080/v1/absence/verdict';
     final response = await http.post(
       Uri.parse(url),
       headers: {
@@ -45,7 +45,7 @@ class NotificationService {
 
   Future<String?> fetchVacationDocumentLink(
       String token, String actionId, String requestType) async {
-    const url = 'https://working-day.online:8080/v1/documents/vacation';
+    const url = 'https://working-day.su:8080/v1/documents/vacation';
     final uri = Uri.parse(url).replace(
         queryParameters: {'action_id': actionId, 'request_type': requestType});
     final response =

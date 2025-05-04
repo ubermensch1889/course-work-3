@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:test/chat/screens/chat_list_screen.dart';
+import 'package:test/chat/screens/chat_screen.dart';
 import 'package:test/services/screens/abscence_screen.dart';
 import 'package:test/services/screens/attendance_screen.dart';
 import 'package:test/services/screens/documents_screen.dart';
@@ -13,8 +14,43 @@ class ServicesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return SafeArea(
+      child: Navigator(
+        key: _navigatorKey,
+        onGenerateRoute: (RouteSettings settings) {
+          WidgetBuilder builder;
+          switch (settings.name) {
+            case '/':
+              builder = (BuildContext _) => _servicesGrid(context);
+              break;
+            case '/documents':
+              builder = (BuildContext _) => const DocumentsListScreen();
+              break;
+            case '/absence':
+              builder = (BuildContext _) => const AbsenceRequestScreen();
+              break;
+            case '/income':
+              builder = (BuildContext _) => const PaymentsScreen();
+              break;
+            case '/attendance':
+              builder = (BuildContext _) => const AttendanceScreen();
+              break;
+            case '/chat_list':
+              builder = (BuildContext _) => const ChatListScreen();
+              break;
+            default:
+              throw Exception('Invalid route: ${settings.name}');
+          }
+          return MaterialPageRoute(builder: builder, settings: settings);
+        },
+      ),
+    );
+  }
+
+  Widget _servicesGrid(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 90,
         centerTitle: true,
         title: const Text(
           'Сервисы',
@@ -24,92 +60,61 @@ class ServicesPage extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+
       ),
       body: SafeArea(
-        child: Navigator(
-          key: _navigatorKey,
-          onGenerateRoute: (RouteSettings settings) {
-            WidgetBuilder builder;
-            switch (settings.name) {
-              case '/':
-                builder = (BuildContext _) => _servicesGrid(context);
-                break;
-              case '/documents':
-                builder = (BuildContext _) => const DocumentsListScreen();
-                break;
-              case '/absence':
-                builder = (BuildContext _) => const AbsenceRequestScreen();
-                break;
-              case '/income':
-                builder = (BuildContext _) => const PaymentsScreen();
-                break;
-              case '/attendance':
-                builder = (BuildContext _) => const AttendanceScreen();
-                break;
-              case '/chat':
-                builder = (BuildContext _) => const ChatListScreen();
-                break;
-              default:
-                throw Exception('Invalid route: ${settings.name}');
+        child: FutureBuilder<String?>(
+          future: UserPreferences.getRole(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done &&
+                snapshot.hasData) {
+              final role = snapshot.data;
+              return GridView.count(
+                crossAxisCount: 2,
+                childAspectRatio: (1 / 1.2),
+                padding: const EdgeInsets.all(16),
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                children: [
+                  _buildServiceButton(
+                    context,
+                    'assets/images/income_icon.png',
+                    'Мои доходы',
+                    '/income',
+                  ),
+                  _buildServiceButton(
+                    context,
+                    'assets/images/documents_icon.png',
+                    'Мои документы',
+                    '/documents',
+                  ),
+                  _buildServiceButton(
+                    context,
+                    'assets/images/vacation_icon.png',
+                    'Отпуска',
+                    '/absence',
+                  ),
+                  _buildServiceButton(
+                    context,
+                    'assets/images/chat_icon.png',
+                    'Мессенджер',
+                    '/chat_list',
+                  ),
+                  if (role == 'manager')
+                    _buildServiceButton(
+                      context,
+                      'assets/images/attendance_icon.png',
+                      'Табель',
+                      '/attendance',
+                    ),
+                ],
+              );
+            } else {
+              return const Center(child: CircularProgressIndicator());
             }
-            return MaterialPageRoute(builder: builder, settings: settings);
           },
         ),
       ),
-    );
-  }
-
-  Widget _servicesGrid(BuildContext context) {
-    return FutureBuilder<String?>(
-      future: UserPreferences.getRole(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done &&
-            snapshot.hasData) {
-          final role = snapshot.data;
-          return GridView.count(
-            crossAxisCount: 2,
-            childAspectRatio: (1 / 1.2),
-            padding: const EdgeInsets.all(16),
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            children: [
-              _buildServiceButton(
-                context,
-                'assets/images/income_icon.png',
-                'Мои доходы',
-                '/income',
-              ),
-              _buildServiceButton(
-                context,
-                'assets/images/documents_icon.png',
-                'Мои документы',
-                '/documents',
-              ),
-              _buildServiceButton(
-                context,
-                'assets/images/vacation_icon.png',
-                'Отпуска',
-                '/absence',
-              ),
-              _buildServiceButton(
-                context,
-                'assets/images/chat_icon.png',
-                'Мессенджер',
-                '/chat',
-              ),
-              if (role == 'manager')
-                _buildServiceButton(
-                  context,
-                  'assets/images/attendance_icon.png',
-                  'Табель',
-                  '/attendance',
-                ),
-            ],
-          );
-        } else {
-          return const Center(child: CircularProgressIndicator());
-        }
-      },
     );
   }
 

@@ -1,147 +1,116 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:test/chat/domain/chat_list_service.dart';
 
 import '../../search/domain/search_service.dart';
 import '../../user/data/user.dart';
+import '../data/chat.dart';
+import '../domain/group_creation_service.dart';
 
-class CreateGroupScreen extends StatefulWidget {
-  const CreateGroupScreen({super.key});
+class GroupCreationScreen extends StatefulWidget {
+  final List<SuggestedUser> users;
+
+  const GroupCreationScreen({super.key, required this.users});
 
   @override
-  CreateGroupScreenState createState() => CreateGroupScreenState();
+  GroupCreationScreenState createState() => GroupCreationScreenState(users: users);
 }
 
-class CreateGroupScreenState extends State<CreateGroupScreen> {
-  final List<User> _chosen_users = [];
-  final List<User> _suggested_users = List<User>.generate(15, (int index) {
-    return User(
-      id: index.toString(),
-      name: 'Анна' + index.toString(),
-      surname: 'Сидорова',
-      patronymic: '',
-      phones: [],
-      email: '',
-      birthday: '',
-      photo_link: null,
-      password: '',
-      headId: '',
-      telegram_id: '',
-      vk_id: '',
-      team: '',
-    );
-  });
-  final SearchService _searchService = SearchService();
-  final ChatListService _chatListService = ChatListService();
+class GroupCreationScreenState extends State<GroupCreationScreen> {
+  final List<SuggestedUser> users;
+  final TextEditingController _controller = TextEditingController();
+  final _groupCreationService = GroupCreationService();
+  File? _groupAvatar;
 
-  Widget _buildChosenUserChip(User user) {
-    return InkWell(
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 122, 145, 184),
-          borderRadius: BorderRadius.circular(25),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundImage: user.photo_link != null
-                  ? NetworkImage(user.photo_link!)
-                  : null,
-              radius: 15,
-              child: user.photo_link == null
-                  ? Text(user.name![0])
-                  : null,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              user.name!,
-              style: const TextStyle(fontSize: 12, color: Colors.black),
-            ),
-          ],
-        ),
-      ),
-      onTap: () {
-        setState(() {
-          _chosen_users.remove(user);
-        });
-      },
-    );
+  GroupCreationScreenState({required this.users});
 
+  Future<void> _pickImage() async {
+    _groupAvatar = await _groupCreationService.pickImage();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Создать группу'),
+        title: const Text('Создать группу'),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          iconSize: 30,
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            // Handle back action
-          },
+            Navigator.of(context).pop();
+          }
         ),
       ),
       body: Column(
         children: [
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 6),
-            constraints: const BoxConstraints(
-              maxHeight: 90.0,
-            ),
-            child: SingleChildScrollView(
-              child: SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  spacing: 8.0,
-                  runSpacing: 8.0,
-                  children: _chosen_users.map((item) {
-                    return _buildChosenUserChip(item);
-                  }).toList(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    _pickImage();
+                  },
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
                 ),
-              )
+
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      hintText: 'Введите название',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Кого бы Вы хотели пригласить?'
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '2 участника',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: _suggested_users.length,
+              itemCount: users.length,
               itemBuilder: (context, index) {
-                var user = _suggested_users[index];
+                var user = users[index];
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.blue.shade700,
+                    radius: 25,
                     child: Text(
-                      user.name!.substring(0, 1),
-                      style: TextStyle(color: Colors.white),
+                      user.name.substring(0, 1),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
-                  title: Text(user.name!),
-                  subtitle: Text(user.name!),
-                  trailing: Checkbox(
-                    value: _chosen_users.contains(user), // Example selected item
-                    onChanged: (value) {
-                      if (value!) {
-                        setState(() {
-                          _chosen_users.add(user);
-                        });
-                      }
-                      else {
-                        setState(() {
-                          _chosen_users.remove(user);
-                        });
-                      }
-                    },
-                  ),
+                  title: Text(user.name),
+                  subtitle: Text(user.name),
                 );
               },
             ),
@@ -149,12 +118,64 @@ class CreateGroupScreenState extends State<CreateGroupScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Handle action
+        onPressed: () async {
+          if (_controller.text.isEmpty) {
+            _showNameEmptyDialog();
+            return;
+          }
+
+          _createChat();
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
         },
-        child: Icon(Icons.arrow_forward),
+        child: const Icon(Icons.check_circle),
       ),
     );
   }
-}
 
+  Future<void> _createChat() async {
+    var isSuccess = await _groupCreationService.tryCreateChat(_controller.text, users);
+
+    if (!isSuccess) {
+      return showDialog<void>(
+        context: context,
+        barrierDismissible: false, // user must tap button!
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('К сожалению, создать чат не удалось. Попробуйте позднее'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Закрыть'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _showNameEmptyDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Введите название чата'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Закрыть'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+}
