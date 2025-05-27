@@ -178,7 +178,7 @@ class ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: SizedBox(
                     height: 28,
-                    child: textWidth > constraints.maxWidth
+                    child: textWidth > constraints.maxWidth - 60
                         ? Marquee(
                       text: text,
                       style: style,

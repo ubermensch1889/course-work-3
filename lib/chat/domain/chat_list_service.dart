@@ -71,7 +71,7 @@ class ChatListService {
         if (secondParticipantId == null) return;
         User anotherUser;
         try {
-          anotherUser = await UserPreferences.fetchUserInfoById(userId);
+          anotherUser = await UserPreferences.fetchUserInfoById(secondParticipantId);
         } catch (e) {
           print("Error fetching user: $e");
           return;
