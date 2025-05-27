@@ -185,9 +185,22 @@ class GroupMembersChoosingScreenState
             return;
           }
 
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => GroupCreationScreen(users: _chosenUsers),
+          Navigator.of(context, rootNavigator: true).push(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  GroupCreationScreen(users: _chosenUsers),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                const begin = Offset(1.0, 0.0); // от правого края экрана
+                const end = Offset.zero;
+                const curve = Curves.ease;
+                final tween = Tween(begin: begin, end: end)
+                    .chain(CurveTween(curve: curve));
+                return SlideTransition(
+                  position: animation.drive(tween),
+                  child: child,
+                );
+              },
             ),
           );
         },

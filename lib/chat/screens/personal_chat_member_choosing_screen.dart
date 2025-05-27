@@ -179,28 +179,49 @@ class PersonalChatMemberChoosingScreenState
     var chat = await _chatCreationService.getChatWithEmployee(user.id);
     if (chat != null) {
       Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (context) {
-            return ChatScreen(
-              chatId: chat.chatId,
-              chatName: user.getFullName(),
-              photoUrl: user.photo_link,
-              anotherUserId: user.id,
-              doublePop: true,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              ChatScreen(
+                chatId: chat.chatId,
+                chatName: user.getFullName(),
+                photoUrl: user.photo_link,
+                anotherUserId: user.id,
+                doublePop: true,
+              ),
+          transitionsBuilder:
+              (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0); // от правого края экрана
+            const end = Offset.zero;
+            const curve = Curves.ease;
+            final tween = Tween(begin: begin, end: end)
+                .chain(CurveTween(curve: curve));
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
             );
           },
         ),
       );
     } else {
-      print('asdasdasdasdasdas');
       Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (context) {
-            return ChatScreen(
-              chatName: user.getFullName(),
-              photoUrl: user.photo_link,
-              anotherUserId: user.id,
-              doublePop: true,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              ChatScreen(
+                chatName: user.getFullName(),
+                photoUrl: user.photo_link,
+                anotherUserId: user.id,
+                doublePop: true,
+              ),
+          transitionsBuilder:
+              (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0); // от правого края экрана
+            const end = Offset.zero;
+            const curve = Curves.ease;
+            final tween = Tween(begin: begin, end: end)
+                .chain(CurveTween(curve: curve));
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
             );
           },
         ),

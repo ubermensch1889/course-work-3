@@ -132,20 +132,6 @@ class ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (_isError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ошибка загрузки сообщений(')),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -164,39 +150,55 @@ class ChatScreenState extends State<ChatScreen> {
               color: const Color.fromRGBO(22, 79, 148, 1),
             )),
         centerTitle: true,
-        title: GestureDetector(
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 25,
-                backgroundImage: widget.photoUrl != null
-                    ? NetworkImage(widget.photoUrl!)
-                    : null,
-                child: widget.photoUrl != null ? null : Text(widget.chatName[0]),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SizedBox(
-                  height: 28,
-                  child: Marquee(
-                    text: widget.chatName,
-                    style: const TextStyle(
-                      fontFamily: 'CeraPro',
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            final text = widget.chatName;
+            const style = TextStyle(
+              fontFamily: 'CeraPro',
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            );
+
+            final textPainter = TextPainter(
+              text: TextSpan(text: text, style: style),
+              maxLines: 1,
+              textDirection: TextDirection.ltr,
+            )..layout(minWidth: 0, maxWidth: double.infinity);
+
+            final textWidth = textPainter.size.width;
+
+            return Row(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundImage: widget.photoUrl != null ? NetworkImage(widget.photoUrl!) : null,
+                  child: widget.photoUrl != null ? null : Text(widget.chatName[0]),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 28,
+                    child: textWidth > constraints.maxWidth
+                        ? Marquee(
+                      text: text,
+                      style: style,
+                      scrollAxis: Axis.horizontal,
+                      blankSpace: 40.0,
+                      velocity: 30.0,
+                      pauseAfterRound: const Duration(milliseconds: 1200),
+                    )
+                        : Text(
+                      text,
+                      style: style,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    scrollAxis: Axis.horizontal,
-                    blankSpace: 40.0,
-                    velocity: 30.0,
-                    pauseAfterRound: Duration(milliseconds: 1200),
-                    // другие параметры по желанию
                   ),
                 ),
-              ),
-            ],
-          ),
-          // ...
+              ],
+            );
+          },
         ),
+
         actions: [
           PopupMenuButton<String>(
             iconSize: 40,
@@ -237,75 +239,93 @@ class ChatScreenState extends State<ChatScreen> {
 
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Container(
-              color: const Color.fromRGBO(235, 236, 240, 1),
-              child: ListView.builder(
-                reverse: true,
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final message = _messages[index];
-                  return ChatBubble(
-                    text: message.content.content,
-                    media: message.content.media, // <--- добавлено
-                    time: message.getPrettyDatetime(),
-                    isSentByMe: message.senderId == _userId,
-                  );
-                },
-              ),
+      body: _getBody(),
+    );
+  }
+
+  Widget _getBody() {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_isError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ошибка загрузки сообщений(')),
+      );
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: Container(
+            color: const Color.fromRGBO(235, 236, 240, 1),
+            child: ListView.builder(
+              reverse: true,
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return ChatBubble(
+                  text: message.content.content,
+                  media: message.content.media, // <--- добавлено
+                  time: message.getPrettyDatetime(),
+                  isSentByMe: message.senderId == _userId,
+                );
+              },
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            color: Colors.white,
-            child: Row(
-              children: <Widget>[
-                IconButton(
-                  icon: const Icon(FontAwesomeIcons.paperclip,
-                      color: Color.fromRGBO(22, 79, 148, 1)),
-                  onPressed: () {},
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: 'Написать сообщение...',
-                      hintStyle: TextStyle(color: Colors.grey),
-                      contentPadding: EdgeInsets.fromLTRB(8, 4, 4, 5),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                          borderSide: BorderSide(
-                              color: Color.fromRGBO(22, 79, 148, 1), width: 3)),
-                    ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          color: Colors.white,
+          child: Row(
+            children: <Widget>[
+              IconButton(
+                icon: const Icon(FontAwesomeIcons.paperclip,
+                    color: Color.fromRGBO(22, 79, 148, 1)),
+                onPressed: () {},
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  decoration: const InputDecoration(
+                    hintText: 'Написать сообщение...',
+                    hintStyle: TextStyle(color: Colors.grey),
+                    contentPadding: EdgeInsets.fromLTRB(8, 4, 4, 5),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                        borderSide: BorderSide(
+                            color: Color.fromRGBO(22, 79, 148, 1), width: 3)),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send,
-                      color: Color.fromRGBO(22, 79, 148, 1)),
-                  onPressed: () async {
-                    if (_messageController.text.isNotEmpty) {
-                      print('try send message ${_messageController.text}');
-                      if (_chatId == null) {
-                        var chatId = await _chatCreationService.createPersonalChat(widget.anotherUserId!);
-                        if (chatId != null) {
-                          _chatId = chatId;
-                        } else {
-                          // TODO handle error
-                        }
+              ),
+              IconButton(
+                icon: const Icon(Icons.send,
+                    color: Color.fromRGBO(22, 79, 148, 1)),
+                onPressed: () async {
+                  if (_messageController.text.isNotEmpty) {
+                    print('try send message ${_messageController.text}');
+                    if (_chatId == null) {
+                      var chatId = await _chatCreationService.createPersonalChat(widget.anotherUserId!);
+                      if (chatId != null) {
+                        _chatId = chatId;
+                      } else {
+                        // TODO handle error
                       }
-                      _messagingService.sendMessage(
-                          _chatId!, _messageController.text, _channel);
-                      _messageController.text = '';
                     }
-                  },
-                ),
-              ],
-            ),
+                    _messagingService.sendMessage(
+                        _chatId!, _messageController.text, _channel);
+                    _messageController.text = '';
+                  }
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

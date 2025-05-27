@@ -22,7 +22,6 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
   final _groupCreationService = ChatCreationService();
   File? _groupAvatar;
 
-
   Future<void> _pickImage() async {
     _groupAvatar = await _groupCreationService.pickImage();
   }
@@ -31,13 +30,28 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Создать группу'),
         leading: IconButton(
-          iconSize: 30,
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.of(context).pop();
-          }
+            iconSize: 30,
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () {
+              // Navigator.of(context).popUntil(ModalRoute.withName('/chat_list'));
+              Navigator.of(context).pop();
+              // Navigator.of(context).pop();
+            }),
+        toolbarHeight: 90,
+        bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(
+              height: 1.0,
+              color: const Color.fromRGBO(22, 79, 148, 1),
+            )),
+        centerTitle: true,
+        title: const Text(
+          'Создать группу',
+          style: TextStyle(
+            fontFamily: 'CeraPro',
+            fontSize: 26,
+          ),
         ),
       ),
       body: Column(
@@ -64,7 +78,6 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextField(
@@ -81,7 +94,8 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -101,13 +115,15 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.blue.shade700,
-                    backgroundImage:
-                    user.photo_link != null ? NetworkImage(user.photo_link!) : null,
+                    backgroundImage: user.photo_link != null
+                        ? NetworkImage(user.photo_link!)
+                        : null,
                     child: user.photo_link == null
                         ? Text(
-                      user.name[0].toUpperCase() + user.surname[0].toUpperCase(),
-                      style: const TextStyle(color: Colors.white),
-                    )
+                            user.name[0].toUpperCase() +
+                                user.surname[0].toUpperCase(),
+                            style: const TextStyle(color: Colors.white),
+                          )
                         : null,
                   ),
                   title: Text(user.name),
@@ -135,7 +151,8 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
   }
 
   Future<void> _createChat() async {
-    var chatId = await _groupCreationService.createGroupChat(_controller.text, widget.users.map((user) => user.id).toList());
+    var chatId = await _groupCreationService.createGroupChat(
+        _controller.text, widget.users.map((user) => user.id).toList());
 
     if (chatId == null) {
       return showDialog<void>(
@@ -143,7 +160,8 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
         barrierDismissible: false, // user must tap button!
         builder: (BuildContext context) {
           return AlertDialog(
-            title: const Text('К сожалению, создать чат не удалось. Попробуйте позднее'),
+            title: const Text(
+                'К сожалению, создать чат не удалось. Попробуйте позднее'),
             actions: <Widget>[
               TextButton(
                 child: const Text('Закрыть'),
@@ -190,6 +208,4 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
       },
     );
   }
-
-
 }

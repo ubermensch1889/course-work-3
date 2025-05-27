@@ -99,14 +99,6 @@ class ChatListScreenState extends State<ChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -162,19 +154,22 @@ class ChatListScreenState extends State<ChatListScreen> {
                     final optionTextStyle = TextStyle(fontSize: 15);
 
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 18),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 20, horizontal: 18),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // --- Первая секция ---
-                          Text("Состояние чатов", style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text("Состояние чатов",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                           RadioListTile(
                             value: 'archived',
                             groupValue: chatState,
                             onChanged: (value) {
                               setModalState(() => chatState = value!);
                             },
-                            title: Text('Архивированные чаты', style: optionTextStyle),
+                            title: Text('Архивированные чаты',
+                                style: optionTextStyle),
                           ),
                           RadioListTile(
                             value: 'active',
@@ -182,11 +177,13 @@ class ChatListScreenState extends State<ChatListScreen> {
                             onChanged: (value) {
                               setModalState(() => chatState = value!);
                             },
-                            title: Text('Активные чаты', style: optionTextStyle),
+                            title:
+                                Text('Активные чаты', style: optionTextStyle),
                           ),
                           Divider(),
                           // --- Вторая секция ---
-                          Text("Типы чатов", style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text("Типы чатов",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                           CheckboxListTile(
                             value: isPersonal,
                             onChanged: (value) {
@@ -201,7 +198,8 @@ class ChatListScreenState extends State<ChatListScreen> {
                             onChanged: (value) {
                               setModalState(() => isGroup = value!);
                             },
-                            title: Text("Групповые чаты", style: optionTextStyle),
+                            title:
+                                Text("Групповые чаты", style: optionTextStyle),
                             controlAffinity: ListTileControlAffinity.leading,
                             dense: true,
                           ),
@@ -219,7 +217,6 @@ class ChatListScreenState extends State<ChatListScreen> {
               });
             },
           ),
-
         ],
       ),
       body: getBody(),
@@ -258,15 +255,41 @@ class ChatListScreenState extends State<ChatListScreen> {
           if (!mounted) return;
           if (chatType != null) {
             if (chatType == 'group') {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const GroupMembersChoosingScreen(),
+              Navigator.of(context, rootNavigator: true).push(
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const GroupMembersChoosingScreen(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                    const begin = Offset(1.0, 0.0); // от правого края экрана
+                    const end = Offset.zero;
+                    const curve = Curves.ease;
+                    final tween = Tween(begin: begin, end: end)
+                        .chain(CurveTween(curve: curve));
+                    return SlideTransition(
+                      position: animation.drive(tween),
+                      child: child,
+                    );
+                  },
                 ),
               );
             } else if (chatType == 'personal') {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => PersonalChatMemberChoosingScreen(channel: _channel),
+              Navigator.of(context, rootNavigator: true).push(
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      PersonalChatMemberChoosingScreen(channel: _channel),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                    const begin = Offset(1.0, 0.0); // от правого края экрана
+                    const end = Offset.zero;
+                    const curve = Curves.ease;
+                    final tween = Tween(begin: begin, end: end)
+                        .chain(CurveTween(curve: curve));
+                    return SlideTransition(
+                      position: animation.drive(tween),
+                      child: child,
+                    );
+                  },
                 ),
               );
             }
@@ -282,14 +305,24 @@ class ChatListScreenState extends State<ChatListScreen> {
   }
 
   Widget getBody() {
-    if (_isError) {
-      return Scaffold(
+    if (_isLoading) {
+      return const Scaffold(
         body: Center(
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Text('Ошибка загрузки чатов.'), TextButton(onPressed: () => {}, child: const Text('Обновить'))])
+          child: CircularProgressIndicator(),
         ),
       );
     }
 
+    if (_isError) {
+      return Scaffold(
+        body: Center(
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Text('Ошибка загрузки чатов.'),
+          TextButton(onPressed: () => {}, child: const Text('Обновить'))
+        ])),
+      );
+    }
 
     return ListView.separated(
       itemCount: _chats.length,
@@ -298,12 +331,23 @@ class ChatListScreenState extends State<ChatListScreen> {
         return ListTile(
           onTap: () {
             Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (context) {
-                  return ChatScreen(
-                    chatId: chat.chatId,
-                    chatName: chat.chatName,
-                    photoUrl: chat.photoUrl,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    ChatScreen(
+                  chatId: chat.chatId,
+                  chatName: chat.chatName,
+                  photoUrl: chat.photoUrl,
+                ),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  const curve = Curves.ease;
+                  final tween = Tween(begin: begin, end: end)
+                      .chain(CurveTween(curve: curve));
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
                   );
                 },
               ),
@@ -311,14 +355,14 @@ class ChatListScreenState extends State<ChatListScreen> {
           },
           leading: CircleAvatar(
             backgroundImage:
-            chat.photoUrl != null ? NetworkImage(chat.photoUrl!) : null,
+                chat.photoUrl != null ? NetworkImage(chat.photoUrl!) : null,
             radius: 30,
             child: chat.photoUrl != null
                 ? null
                 : (chat.chatName.split(' ').length == 1
-                ? Text(chat.chatName[0].toUpperCase())
-                : Text(chat.chatName[0].toUpperCase()[0].toUpperCase() +
-                chat.chatName.split(' ')[1][0].toUpperCase())),
+                    ? Text(chat.chatName[0].toUpperCase())
+                    : Text(chat.chatName[0].toUpperCase()[0].toUpperCase() +
+                        chat.chatName.split(' ')[1][0].toUpperCase())),
           ),
           title: Text(
             chat.chatName,

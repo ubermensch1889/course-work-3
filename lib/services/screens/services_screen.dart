@@ -36,8 +36,20 @@ class ServicesPage extends StatelessWidget {
               builder = (BuildContext _) => const AttendanceScreen();
               break;
             case '/chat_list':
-              builder = (BuildContext _) => const ChatListScreen();
-              break;
+              return PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) => const ChatListScreen(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  const curve = Curves.ease;
+                  final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
+                settings: settings,
+              );
             default:
               throw Exception('Invalid route: ${settings.name}');
           }
