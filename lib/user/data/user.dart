@@ -57,4 +57,21 @@ class User {
       vk_id: json['vk_id'],
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is User) {
+      return id == other.id;
+    }
+
+    return false;
+  }
+
+  String getFullName() {
+    if (patronymic != null) {
+      return '$surname $name $patronymic';
+    }
+
+    return '$name $surname';
+  }
 }

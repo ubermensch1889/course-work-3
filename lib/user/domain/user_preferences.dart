@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:test/consts.dart';
 import 'package:test/user/data/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/user/data/user_action.dart';
@@ -67,7 +68,7 @@ class UserPreferences {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('https://working-day.su:8080/v1/employee/info');
+    var url = Uri.parse('$baseUrl/v1/employee/info');
     var headers = {
       'Authorization': 'Bearer $token',
     };
@@ -93,7 +94,7 @@ class UserPreferences {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('https://working-day.su:8080/v1/employee/info')
+    var url = Uri.parse('$baseUrl/v1/employee/info')
         .replace(queryParameters: {'employee_id': userId});
     var headers = {'Authorization': 'Bearer $token'};
 
@@ -114,7 +115,7 @@ class UserPreferences {
       throw Exception('Токен не существует');
     }
 
-    var url = Uri.parse('https://working-day.su:8080/v1/actions');
+    var url = Uri.parse('$baseUrl/v1/actions');
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

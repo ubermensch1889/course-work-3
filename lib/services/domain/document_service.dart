@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'package:http/http.dart' as http;
+import 'package:test/consts.dart';
 import 'dart:convert';
 import 'package:test/services/data/document.dart';
 import 'package:test/user/domain/user_preferences.dart';
@@ -12,7 +13,7 @@ class DocumentsService {
       throw Exception('Токен не существует');
     }
 
-    final url = Uri.parse('https://working-day.su:8080/v1/documents/list');
+    final url = Uri.parse('$baseUrl/v1/documents/list');
     try {
       final response = await http.get(
         url,

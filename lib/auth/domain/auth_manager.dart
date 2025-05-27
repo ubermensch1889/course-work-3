@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:test/consts.dart';
 import 'package:test/main.dart';
 import 'package:test/user/domain/user_preferences.dart';
 
@@ -9,7 +10,7 @@ class AuthManager {
       String login, String password, String companyId, WidgetRef ref) async {
     await UserPreferences.logout();
 
-    final url = Uri.parse('https://working-day.su:8080/v1/authorize');
+    final url = Uri.parse('$baseUrl/v1/authorize');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

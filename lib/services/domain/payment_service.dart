@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:test/consts.dart';
 import 'package:test/services/data/payment.dart';
 import 'package:test/user/domain/user_preferences.dart';
 
@@ -10,7 +11,7 @@ class PaymentApi {
       throw Exception('Token not found');
     }
 
-    var url = Uri.parse('https://working-day.su:8080/v1/payments');
+    var url = Uri.parse('$baseUrl/v1/payments');
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

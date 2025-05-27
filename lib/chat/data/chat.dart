@@ -1,15 +1,26 @@
-enum ChatType {
-  group,
-  personal,
+class Media {
+  final String type;
+  final String url;
+
+  Media(this.type, this.url);
+
+  factory Media.fromJson(Map<String, dynamic> json) {
+    return Media(json['type'], json['url']);
+  }
 }
+
 
 class MessengerMessageContent {
   final String? content;
+  List<Media>? media = [];
 
-  MessengerMessageContent(this.content);
+  MessengerMessageContent({required this.content, this.media});
 
   factory MessengerMessageContent.fromJson(Map<String, dynamic> json) {
-    return MessengerMessageContent(json['content']);
+    if (json.containsKey('media')) {
+      return MessengerMessageContent(content: json['content'], media: json['media'].map((dynamic item) => Media.fromJson(item)).toList());
+    }
+    return MessengerMessageContent(content: json['content']);
   }
 }
 
@@ -49,6 +60,10 @@ class MessengerMessage {
   }
 
   String getPrettyDatetime() {
+    if (DateTime.timestamp().difference(timestamp).inDays >= 7) {
+      return '${timestamp.month.toString().padLeft(2, '0')}.${timestamp.day.toString().padLeft(2, '0')}';
+    }
+
     if (timestamp.day != DateTime.timestamp().day) {
       return weekdays[timestamp.weekday];
     }
@@ -59,19 +74,21 @@ class MessengerMessage {
 
 class MessengerListedChatInfo {
   final String chatId;
-  final String chatName;
+  String chatName;
   final MessengerMessage? lastMessage;
+  String? photoUrl;
 
   MessengerListedChatInfo({
     required this.chatId,
     required this.chatName,
-    this.lastMessage
+    this.lastMessage,
+    this.photoUrl,
   });
 
   factory MessengerListedChatInfo.fromJson(Map<String, dynamic> json) {
     MessengerMessage? lastMessage;
 
-    if (json.containsKey('last_message')) {
+    if (json.containsKey('last_message') && json['last_message']['chat_id'].toString().isNotEmpty) {
       lastMessage = MessengerMessage.fromJson(json['last_message']);
     }
 
@@ -81,25 +98,27 @@ class MessengerListedChatInfo {
         lastMessage: lastMessage
     );
   }
-}
 
-class SuggestedUser {
-  final String name;
-  final String userId;
-  final String? imageUrl;
-
-  SuggestedUser({
-    required this.name,
-    required this.userId,
-    this.imageUrl
-  });
-
-  @override
-  bool operator ==(Object other) {
-    if (other is SuggestedUser) {
-      return userId == (other as SuggestedUser).userId;
+  bool isPersonal() {
+    // temporary solution due to limitations on the backend side
+    if (chatName.endsWith('_ps_') && chatName.startsWith('_ps_')) {
+      return true;
     }
 
     return false;
+  }
+
+  String? getSecondParticipantId(String userId) {
+    // temporary solution due to limitations on the backend side
+    if (!isPersonal()) {
+      return null;
+    }
+
+    var words = chatName.split('_');
+    if (words.length != 6) {
+      throw Exception('Incorrect chat name format.');
+    }
+
+    return words[2] == userId ? words[3] : words[2];
   }
 }

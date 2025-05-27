@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:test/consts.dart';
 import 'dart:convert';
 import 'package:test/user/data/user.dart';
 import 'package:test/user/domain/user_preferences.dart';
@@ -11,7 +12,7 @@ class SearchService {
     }
 
     final response = await http.post(
-      Uri.parse('https://working-day.su:8080/v1/search/full'),
+      Uri.parse('$baseUrl/v1/search/full'),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -39,7 +40,7 @@ class SearchService {
     }
 
     final response = await http.post(
-      Uri.parse('https://working-day.su:8080/v1/search/suggest'),
+      Uri.parse('$baseUrl/v1/search/suggest'),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

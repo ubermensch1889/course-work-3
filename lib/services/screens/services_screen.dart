@@ -60,7 +60,12 @@ class ServicesPage extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-
+        bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(
+              height: 1.0,
+              color: const Color.fromRGBO(22, 79, 148, 1),
+            )),
       ),
       body: SafeArea(
         child: FutureBuilder<String?>(

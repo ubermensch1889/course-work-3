@@ -6,24 +6,22 @@ import 'package:test/chat/domain/chat_list_service.dart';
 import '../../search/domain/search_service.dart';
 import '../../user/data/user.dart';
 import '../data/chat.dart';
-import '../domain/group_creation_service.dart';
+import '../domain/chat_creation_service.dart';
 
 class GroupCreationScreen extends StatefulWidget {
-  final List<SuggestedUser> users;
+  final List<User> users;
 
   const GroupCreationScreen({super.key, required this.users});
 
   @override
-  GroupCreationScreenState createState() => GroupCreationScreenState(users: users);
+  GroupCreationScreenState createState() => GroupCreationScreenState();
 }
 
 class GroupCreationScreenState extends State<GroupCreationScreen> {
-  final List<SuggestedUser> users;
   final TextEditingController _controller = TextEditingController();
-  final _groupCreationService = GroupCreationService();
+  final _groupCreationService = ChatCreationService();
   File? _groupAvatar;
 
-  GroupCreationScreenState({required this.users});
 
   Future<void> _pickImage() async {
     _groupAvatar = await _groupCreationService.pickImage();
@@ -82,13 +80,13 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '2 участника',
-                style: TextStyle(
+                getParticipantsNumberString(),
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -97,17 +95,20 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: users.length,
+              itemCount: widget.users.length,
               itemBuilder: (context, index) {
-                var user = users[index];
+                var user = widget.users[index];
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.blue.shade700,
-                    radius: 25,
-                    child: Text(
-                      user.name.substring(0, 1),
+                    backgroundImage:
+                    user.photo_link != null ? NetworkImage(user.photo_link!) : null,
+                    child: user.photo_link == null
+                        ? Text(
+                      user.name[0].toUpperCase() + user.surname[0].toUpperCase(),
                       style: const TextStyle(color: Colors.white),
-                    ),
+                    )
+                        : null,
                   ),
                   title: Text(user.name),
                   subtitle: Text(user.name),
@@ -134,9 +135,9 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
   }
 
   Future<void> _createChat() async {
-    var isSuccess = await _groupCreationService.tryCreateChat(_controller.text, users);
+    var chatId = await _groupCreationService.createGroupChat(_controller.text, widget.users.map((user) => user.id).toList());
 
-    if (!isSuccess) {
+    if (chatId == null) {
       return showDialog<void>(
         context: context,
         barrierDismissible: false, // user must tap button!
@@ -154,6 +155,19 @@ class GroupCreationScreenState extends State<GroupCreationScreen> {
           );
         },
       );
+    }
+  }
+
+  String getParticipantsNumberString() {
+    final length = widget.users.length + 1;
+    final mod10 = length % 10;
+    final mod100 = length % 100;
+    if (mod10 == 1 && mod100 != 11) {
+      return '$length участник';
+    } else if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) {
+      return '$length участника';
+    } else {
+      return '$length участников';
     }
   }
 

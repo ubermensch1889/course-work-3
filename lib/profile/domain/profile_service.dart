@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:test/consts.dart';
 import 'package:test/user/data/user.dart';
 import 'package:test/user/domain/user_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,7 +20,7 @@ class ProfileService {
       return null;
     }
     var url =
-        Uri.parse('https://working-day.su:8080/v1/profile/upload-photo');
+        Uri.parse('$baseUrl/v1/profile/upload-photo');
     var headers = {'Authorization': 'Bearer $token'};
     var response = await http.post(url, headers: headers);
     if (response.statusCode == 200) {

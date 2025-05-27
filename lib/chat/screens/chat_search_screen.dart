@@ -79,14 +79,14 @@ class ChatSearchScreenState extends State<ChatSearchScreen>
 
   Widget _buildPersonalChatsList() {
     return ListView.builder(
-      itemCount: 5,
+      itemCount: 1,
       itemBuilder: (context, index) {
         return const ListTile(
           leading: CircleAvatar(
             child: Icon(Icons.person),
           ),
           title: Text('Иван Иванов'),
-          subtitle: Text('Был в сети в 8:54'),
+          subtitle: Text('Как дела с отчетом?'),
         );
       },
     );

@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:test/user/domain/user_preferences.dart';
+import 'package:test/consts.dart';
 
 class AbsenceService {
   static Future<bool> requestAbsence(
@@ -11,7 +12,7 @@ class AbsenceService {
     }
 
     final url =
-        Uri.parse('https://working-day.su:8080/v1/abscence/request');
+        Uri.parse('$baseUrl/v1/abscence/request');
     final response = await http.post(
       url,
       headers: {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:test/chat/domain/chat_list_service.dart';
+import 'package:test/chat/domain/chat_creation_service.dart';
 
 import '../../search/domain/search_service.dart';
 import '../../user/data/user.dart';
+import '../../user/domain/user_preferences.dart';
 import '../data/chat.dart';
 import 'group_creation_screen.dart';
 
@@ -17,32 +19,26 @@ class GroupMembersChoosingScreen extends StatefulWidget {
 class GroupMembersChoosingScreenState
     extends State<GroupMembersChoosingScreen> {
   final SearchService _searchService = SearchService();
-  final ChatListService _chatListService = ChatListService();
+  final ChatCreationService _groupCreationService = ChatCreationService();
+  late String _userId;
 
-  List<SuggestedUser> _chosenUsers = [];
-  List<SuggestedUser> _suggestedUsers = [];
-  List<SuggestedUser> _initialUsers = [];
+  final List<User> _chosenUsers = [];
+  List<User> _suggestedUsers = [];
+  List<User> _initialUsers = [];
 
   bool _isLoading = true;
   final TextEditingController _controller = TextEditingController();
 
+  Future<void> _getUserId() async {
+    _userId = await UserPreferences.getUserId();
+  }
+
   Future<void> _initSuggestedUsers() async {
-    // TODO: добавить обработку групповых чатов, чтобы они тут не отображались
-    var chatUsersRaw = await _chatListService.fetchChats();
-    List<SuggestedUser> chatUsers = [];
-
-    // for (final user in chatUsersRaw) {
-    //   // TODO: исправить на нормальный юзер айди
-    //   chatUsers.add(SuggestedUser(name: user.chatName, userId: user.chatId));
-    // }
-
-    if (_initialUsers.isEmpty) {
-      _initialUsers = chatUsers;
-    }
+    _initialUsers = await _groupCreationService.getEmployees();
 
     setState(() {
       _isLoading = false;
-      _suggestedUsers = chatUsers;
+      _suggestedUsers = _initialUsers;
     });
   }
 
@@ -59,13 +55,7 @@ class GroupMembersChoosingScreenState
       _isLoading = true;
     });
 
-    var suggestedUsersRaw = await _searchService.suggestUsers(text);
-    List<SuggestedUser> suggestedUsers = [];
-
-    for (final userRaw in suggestedUsersRaw) {
-      suggestedUsers
-          .add(SuggestedUser(name: userRaw.name, userId: userRaw.id));
-    }
+    var suggestedUsers = await _searchService.suggestUsers(text);
 
     setState(() {
       _suggestedUsers = suggestedUsers;
@@ -77,6 +67,7 @@ class GroupMembersChoosingScreenState
   void initState() {
     super.initState();
     _initSuggestedUsers();
+    _getUserId();
     _controller.addListener(() async {
       await _updateSuggestedUsers(_controller.text);
     });
@@ -88,34 +79,38 @@ class GroupMembersChoosingScreenState
     super.dispose();
   }
 
-  Widget _buildChosenUserChip(SuggestedUser user) {
+  Widget _buildChosenUserChip(User user) {
     return InkWell(
       child: Stack(children: [
         // Flexible(
         //   child:
-          Container(
-              width: 120,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 122, 145, 184),
-                borderRadius: BorderRadius.circular(25),
+        Container(
+            width: 120,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 122, 145, 184),
+              borderRadius: BorderRadius.circular(25),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+            child: Row(children: [
+              const SizedBox(
+                width: 40,
               ),
-              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-              child: Row(children: [
-                const SizedBox(
-                  width: 40,
-                ),
-                Text(user.name,
-                    style: const TextStyle(fontSize: 14, color: Colors.black)),
-              ])),
+              Text(user.name,
+                  style: const TextStyle(fontSize: 14, color: Colors.black)),
+            ])),
         // ),
         CircleAvatar(
           radius: 20,
           backgroundColor: Colors.blue.shade700,
-          child: Text(
-            user.name.substring(0, 1),
-            style: const TextStyle(color: Colors.white),
-          ),
+          backgroundImage:
+              user.photo_link != null ? NetworkImage(user.photo_link!) : null,
+          child: user.photo_link == null
+              ? Text(
+                  user.name[0].toUpperCase() + user.surname[0].toUpperCase(),
+                  style: const TextStyle(color: Colors.white),
+                )
+              : null,
         ),
       ]),
       onTap: () {
@@ -226,16 +221,23 @@ class GroupMembersChoosingScreenState
       itemCount: _suggestedUsers.length,
       itemBuilder: (context, index) {
         var user = _suggestedUsers[index];
+        if (user.id == _userId) {
+          return null;
+        }
+
         return ListTile(
           leading: CircleAvatar(
             backgroundColor: Colors.blue.shade700,
-            child: Text(
-              user.name.substring(0, 1),
-              style: const TextStyle(color: Colors.white),
-            ),
+            backgroundImage:
+                user.photo_link != null ? NetworkImage(user.photo_link!) : null,
+            child: user.photo_link == null
+                ? Text(
+                    user.name[0].toUpperCase() + user.surname[0].toUpperCase(),
+                    style: const TextStyle(color: Colors.white),
+                  )
+                : null,
           ),
-          title: Text(user.name),
-          subtitle: Text(user.name),
+          title: Text('${user.name} ${user.surname}'),
           trailing: Checkbox(
             value: _chosenUsers.contains(user), // Example selected item
             onChanged: (value) {

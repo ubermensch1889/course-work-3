@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:test/consts.dart';
 import 'package:test/user/data/user.dart';
 import 'package:test/user/domain/user_preferences.dart';
 import 'package:test/user/data/user_profile_update.dart';
@@ -18,7 +19,7 @@ class ProfileManager {
       return false;
     }
 
-    var url = Uri.parse('https://working-day.su:8080/v1/profile/edit');
+    var url = Uri.parse('$baseUrl/v1/profile/edit');
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

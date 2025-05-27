@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'package:test/chat/data/chat.dart';
 import 'dart:convert';
 import 'package:test/chat/data/chat.dart';
+import 'package:test/consts.dart';
 import 'package:test/user/domain/user_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -39,7 +40,7 @@ class MessagingService {
       throw Exception('Токен не существует');
     }
 
-    final url = Uri.parse('https://working-day.su:8080/v1/messenger/recent-messages');
+    final url = Uri.parse('$baseUrl/v1/messenger/recent-messages');
     final body = jsonEncode({
       'chat_id': chatId
     });
@@ -58,10 +59,19 @@ class MessagingService {
 
       if (response.statusCode == 200) {
         print('Ответ сервера: ${utf8.decode(response.bodyBytes)}');
-        List<dynamic> body = json.decode(utf8.decode(response.bodyBytes));
+        var bodyRaw = json.decode(utf8.decode(response.bodyBytes));
+        if (bodyRaw == null) {
+          return List.empty();
+        }
+        List<dynamic> body = bodyRaw;
+
         print('govb');
-        print(body[0]);
+        print(body.isNotEmpty ? body[0] : 'empty');
         List<MessengerMessage> messages = body.map((dynamic item) => MessengerMessage.fromJson(json.decode(item))).toList();
+
+        if (messages.isNotEmpty && messages[messages.length - 1].senderId.isEmpty) {
+          messages.removeAt(messages.length - 1);
+        }
         print('jop');
         return messages;
       }
