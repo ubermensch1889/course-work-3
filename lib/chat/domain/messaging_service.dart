@@ -73,7 +73,7 @@ class MessagingService {
           messages.removeAt(messages.length - 1);
         }
         print('jop');
-        return messages;
+        return messages.reversed.toList();
       }
       print('Ошибка загрузки сообщений: ${response.statusCode}');
       print('Ответ: ${response.body}');

@@ -70,6 +70,10 @@ class MessengerMessage {
 
     return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
   }
+
+  String getTime() {
+    return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+  }
 }
 
 class MessengerListedChatInfo {
@@ -77,6 +81,7 @@ class MessengerListedChatInfo {
   String chatName;
   final MessengerMessage? lastMessage;
   String? photoUrl;
+  String? personalChatName;
 
   MessengerListedChatInfo({
     required this.chatId,
@@ -84,6 +89,14 @@ class MessengerListedChatInfo {
     this.lastMessage,
     this.photoUrl,
   });
+
+  String getPrettyChatName() {
+    if (personalChatName != null) {
+      return personalChatName!;
+    }
+
+    return chatName;
+  }
 
   factory MessengerListedChatInfo.fromJson(Map<String, dynamic> json) {
     MessengerMessage? lastMessage;

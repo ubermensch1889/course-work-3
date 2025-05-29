@@ -78,7 +78,7 @@ class ChatListService {
         }
 
         chat.photoUrl = anotherUser.photo_link;
-        chat.chatName = anotherUser.getFullName();
+        chat.personalChatName = anotherUser.getFullName();
       }());
       print('trying to add1');
     }

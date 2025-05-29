@@ -9,6 +9,7 @@ import 'package:test/chat/screens/chat_search_screen.dart';
 import 'package:test/chat/screens/personal_chat_member_choosing_screen.dart';
 import 'package:test/consts.dart';
 import 'package:test/services/domain/abscence_service.dart';
+import 'package:test/user/domain/user_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../main.dart';
@@ -25,7 +26,8 @@ class ChatListScreen extends StatefulWidget {
 class ChatListScreenState extends State<ChatListScreen> {
   final ChatListService chatListService = ChatListService();
   late List<MessengerListedChatInfo> _chats = [];
-  final _channel = WebSocketChannel.connect(
+  late String _userId;
+  late WebSocketChannel _channel = WebSocketChannel.connect(
     Uri.parse('ws://$websocketAddress:$serverPort/chat'),
   );
   bool _isLoading = true;
@@ -48,13 +50,33 @@ class ChatListScreenState extends State<ChatListScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeWebSocket();
+  }
 
-    _checkWebSocketConnectionAndLoadChats();
+  Future<void> _initializeWebSocket() async {
+    await _checkWebSocketConnectionAndLoadChats();
+    
+    _channel.stream.listen(
+      (message) {
+        print('from list $message');
+        _updateChats();
+      },
+      onError: (error) {
+        print('WebSocket error: $error');
+        // Try to reconnect on error
+        _reconnectWebSocket();
+      }
+    );
+  }
 
-    _channel.stream.listen((message) {
-      print('from list $message');
-      _updateChats();
+  Future<void> _reconnectWebSocket() async {
+    await _channel.sink.close();
+    setState(() {
+      _channel = WebSocketChannel.connect(
+        Uri.parse('ws://$websocketAddress:$serverPort/chat'),
+      );
     });
+    _initializeWebSocket();
   }
 
   Future<void> _checkWebSocketConnectionAndLoadChats() async {
@@ -63,22 +85,27 @@ class ChatListScreenState extends State<ChatListScreen> {
     });
     try {
       await _channel.ready;
-      print('Websocket connected');
+      print('Websocket connected from chat list');
     } on SocketException catch (e) {
-      print('SocketException occured: $e');
+      print('SocketException occurred: $e');
+      await Future.delayed(const Duration(seconds: 1));
+      return _reconnectWebSocket();
     } on WebSocketChannelException catch (e) {
-      print('WebSocketChannelException occured: $e');
+      print('WebSocketChannelException occurred: $e');
+      await Future.delayed(const Duration(seconds: 1));
+      return _reconnectWebSocket();
     }
 
-    _loadChats();
+    _loadChatsAndSetUserId();
   }
 
-  Future<void> _loadChats() async {
+  Future<void> _loadChatsAndSetUserId() async {
     setState(() {
       _isLoading = true;
     });
     try {
       _chats = await chatListService.fetchAndAdjustChats();
+      _userId = await UserPreferences.getUserId();
     } catch (e) {
       print('ошибка загрузки чатов $e');
       setState(() {
@@ -335,7 +362,7 @@ class ChatListScreenState extends State<ChatListScreen> {
                 pageBuilder: (context, animation, secondaryAnimation) =>
                     ChatScreen(
                   chatId: chat.chatId,
-                  chatName: chat.chatName,
+                  chatName: chat.getPrettyChatName(),
                   photoUrl: chat.photoUrl,
                 ),
                 transitionsBuilder:
@@ -359,13 +386,13 @@ class ChatListScreenState extends State<ChatListScreen> {
             radius: 30,
             child: chat.photoUrl != null
                 ? null
-                : (chat.chatName.split(' ').length == 1
-                    ? Text(chat.chatName[0].toUpperCase())
-                    : Text(chat.chatName[0].toUpperCase()[0].toUpperCase() +
-                        chat.chatName.split(' ')[1][0].toUpperCase())),
+                : (chat.getPrettyChatName().split(' ').length == 1
+                    ? Text(chat.getPrettyChatName()[0].toUpperCase())
+                    : Text(chat.getPrettyChatName()[0].toUpperCase()[0].toUpperCase() +
+                        chat.getPrettyChatName().split(' ')[1][0].toUpperCase())),
           ),
           title: Text(
-            chat.chatName,
+            chat.getPrettyChatName(),
             style: const TextStyle(
               fontFamily: 'CeraPro',
               fontSize: 16,

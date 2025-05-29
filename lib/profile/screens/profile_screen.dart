@@ -47,6 +47,14 @@ class ProfileContentState extends State<ProfileContent> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 90,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            height: 1.0,
+            color: const Color.fromRGBO(22, 79, 148, 1),
+          ),
+        ),
         centerTitle: true,
         title: const Text('Профиль',
             style: TextStyle(

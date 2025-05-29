@@ -1,11 +1,13 @@
 import 'dart:io';
 
+
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:marquee/marquee.dart';
 import 'package:test/chat/domain/chat_creation_service.dart';
 import 'package:test/chat/domain/messaging_service.dart';
+import 'package:test/chat/screens/user_profile_screen.dart';
 import 'package:test/consts.dart';
 import 'package:test/main.dart';
 import 'package:test/search/screens/search_profile_screen.dart';
@@ -13,6 +15,8 @@ import 'package:test/user/domain/user_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../data/chat.dart';
+import 'group_members_screen.dart';
+
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -21,13 +25,14 @@ class ChatScreen extends StatefulWidget {
   final String? anotherUserId;
   final bool doublePop;
 
-  const ChatScreen(
-      {super.key,
-      this.chatId,
-      required this.chatName,
-      required this.photoUrl,
-      this.anotherUserId,
-      this.doublePop = false});
+  const ChatScreen({
+    super.key,
+    this.chatId,
+    required this.chatName,
+    required this.photoUrl,
+    this.anotherUserId,
+    this.doublePop = false,
+  });
 
   @override
   ChatScreenState createState() => ChatScreenState();
@@ -89,8 +94,8 @@ class ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    super.dispose();
     _channel.sink.close();
+    super.dispose();
   }
 
   Future<void> _checkWebSocketConnectionAndLoadChats() async {
@@ -130,73 +135,131 @@ class ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _handleHeaderTap() {
+    if (widget.anotherUserId != null) {
+      // Это личный чат
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              UserProfileScreen(userId: widget.anotherUserId!),
+          transitionsBuilder:
+              (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const curve = Curves.ease;
+            final tween = Tween(begin: begin, end: end)
+                .chain(CurveTween(curve: curve));
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+        ),
+      );
+    } else {
+      // Это групповой чат
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              GroupMembersScreen(
+                chatId: widget.chatId!,
+                chatName: widget.chatName,
+                userId: _userId,
+              ),
+          transitionsBuilder:
+              (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const curve = Curves.ease;
+            final tween = Tween(begin: begin, end: end)
+                .chain(CurveTween(curve: curve));
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+        ),
+      ).then((shouldRefresh) {
+        if (shouldRefresh == true) {
+          _updateMessages();
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-            iconSize: 30,
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () {
-              // Navigator.of(context).popUntil(ModalRoute.withName('/chat_list'));
-              Navigator.of(context).pop();
-              // Navigator.of(context).pop();
-            }),
+          iconSize: 30,
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () { Navigator.of(context).pop();
+          if (widget.doublePop) {
+            Navigator.of(context).pop();
+          }}
+        ),
         toolbarHeight: 90,
         bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1.0),
-            child: Container(
-              height: 1.0,
-              color: const Color.fromRGBO(22, 79, 148, 1),
-            )),
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            height: 1.0,
+            color: const Color.fromRGBO(22, 79, 148, 1),
+          ),
+        ),
         centerTitle: true,
-        title: LayoutBuilder(
-          builder: (context, constraints) {
-            final text = widget.chatName;
-            const style = TextStyle(
-              fontFamily: 'CeraPro',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            );
+        title: GestureDetector(
+          onTap: _handleHeaderTap,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final text = widget.chatName;
+              const style = TextStyle(
+                fontFamily: 'CeraPro',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              );
 
-            final textPainter = TextPainter(
-              text: TextSpan(text: text, style: style),
-              maxLines: 1,
-              textDirection: TextDirection.ltr,
-            )..layout(minWidth: 0, maxWidth: double.infinity);
+              final textPainter = TextPainter(
+                text: TextSpan(text: text, style: style),
+                maxLines: 1,
+                textDirection: TextDirection.ltr,
+              )..layout(minWidth: 0, maxWidth: double.infinity);
 
-            final textWidth = textPainter.size.width;
+              final textWidth = textPainter.size.width;
 
-            return Row(
-              children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundImage: widget.photoUrl != null ? NetworkImage(widget.photoUrl!) : null,
-                  child: widget.photoUrl != null ? null : Text(widget.chatName[0]),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: SizedBox(
-                    height: 28,
-                    child: textWidth > constraints.maxWidth - 60
-                        ? Marquee(
-                      text: text,
-                      style: style,
-                      scrollAxis: Axis.horizontal,
-                      blankSpace: 40.0,
-                      velocity: 30.0,
-                      pauseAfterRound: const Duration(milliseconds: 1200),
-                    )
-                        : Text(
-                      text,
-                      style: style,
-                      overflow: TextOverflow.ellipsis,
+              return Row(
+                children: [
+                  CircleAvatar(
+                    radius: 25,
+                    backgroundImage: widget.photoUrl != null
+                        ? NetworkImage(widget.photoUrl!)
+                        : null,
+                    child: widget.photoUrl != null ? null : Text(widget.chatName[0]),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SizedBox(
+                      height: 28,
+                      child: textWidth > constraints.maxWidth - 60
+                          ? Marquee(
+                              text: text,
+                              style: style,
+                              scrollAxis: Axis.horizontal,
+                              blankSpace: 40.0,
+                              velocity: 30.0,
+                              pauseAfterRound: const Duration(milliseconds: 1200),
+                            )
+                          : Text(
+                              text,
+                              style: style,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
 
         actions: [
@@ -258,6 +321,7 @@ class ChatScreenState extends State<ChatScreen> {
       );
     }
 
+    final chatItems = _buildChatItems().reversed.toList();
     return Column(
       children: [
         Expanded(
@@ -265,15 +329,9 @@ class ChatScreenState extends State<ChatScreen> {
             color: const Color.fromRGBO(235, 236, 240, 1),
             child: ListView.builder(
               reverse: true,
-              itemCount: _messages.length,
+              itemCount: chatItems.length,
               itemBuilder: (context, index) {
-                final message = _messages[index];
-                return ChatBubble(
-                  text: message.content.content,
-                  media: message.content.media, // <--- добавлено
-                  time: message.getPrettyDatetime(),
-                  isSentByMe: message.senderId == _userId,
-                );
+                return chatItems[index];
               },
             ),
           ),
@@ -328,7 +386,84 @@ class ChatScreenState extends State<ChatScreen> {
       ],
     );
   }
+
+  List<Widget> _buildChatItems() {
+    List<Widget> result = [];
+    if (_messages.isEmpty) return result;
+    String? lastDate;
+    for (int i = 0; i < _messages.length; i++) {
+      final msg = _messages[i];
+      final msgDate = _formatDate(msg.timestamp);
+
+      // Нужно добавить разделитель дня?
+      if (lastDate != msgDate) {
+        result.add(DateDivider(dateText: msgDate));
+        lastDate = msgDate;
+      }
+
+      result.add(ChatBubble(
+        text: msg.content.content,
+        media: msg.content.media,
+        time: msg.getTime(),
+        isSentByMe: msg.senderId == _userId,
+      ));
+    }
+    return result;
+  }
+
+  String _formatDate(DateTime dt) {
+    final today = DateTime.now();
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    if (dt.year == today.year && dt.month == today.month && dt.day == today.day) {
+      return 'Сегодня';
+    }
+    if (dt.year == yesterday.year && dt.month == yesterday.month && dt.day == yesterday.day) {
+      return 'Вчера';
+    }
+
+    // Массив русских месяцев
+    const monthsRu = [
+      '',
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    String day = dt.day.toString();
+    String month = monthsRu[dt.month];
+    return '$day $month';
+  }
+
+
 }
+
+class DateDivider extends StatelessWidget {
+  final String dateText;
+  const DateDivider({required this.dateText});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Color(0xFFBBC7D3),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            dateText,
+            style: const TextStyle(
+                fontSize: 15,
+                color: Colors.white,
+                fontWeight: FontWeight.w500
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 class ChatBubble extends StatelessWidget {
   final String? text;

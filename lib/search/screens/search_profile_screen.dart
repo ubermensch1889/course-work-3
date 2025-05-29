@@ -19,6 +19,19 @@ class SearchProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+              iconSize: 30,
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.of(context).pop(),
+          ),
+          toolbarHeight: 90,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(
+              height: 1.0,
+              color: const Color.fromRGBO(22, 79, 148, 1),
+            ),
+          ),
           centerTitle: true,
           title: const Text(
             'Профиль',
@@ -126,7 +139,7 @@ class SearchProfileScreen extends StatelessWidget {
               chatName: user.getFullName(),
               photoUrl: user.photo_link,
               anotherUserId: user.id,
-              doublePop: true,
+              doublePop: false,
             );
           },
         ),
