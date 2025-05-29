@@ -27,7 +27,7 @@ class ChatListScreenState extends State<ChatListScreen> {
   final ChatListService chatListService = ChatListService();
   late List<MessengerListedChatInfo> _chats = [];
   late String _userId;
-  late WebSocketChannel _channel = WebSocketChannel.connect(
+  WebSocketChannel _channel = WebSocketChannel.connect(
     Uri.parse('ws://$websocketAddress:$serverPort/chat'),
   );
   bool _isLoading = true;
@@ -50,33 +50,19 @@ class ChatListScreenState extends State<ChatListScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeWebSocket();
-  }
-
-  Future<void> _initializeWebSocket() async {
-    await _checkWebSocketConnectionAndLoadChats();
+    _checkWebSocketConnectionAndLoadChats();
     
+    print('chat list socket listening started');
     _channel.stream.listen(
       (message) {
         print('from list $message');
         _updateChats();
       },
       onError: (error) {
-        print('WebSocket error: $error');
-        // Try to reconnect on error
+        print('WebSocket error in chat list: $error');
         _reconnectWebSocket();
       }
     );
-  }
-
-  Future<void> _reconnectWebSocket() async {
-    await _channel.sink.close();
-    setState(() {
-      _channel = WebSocketChannel.connect(
-        Uri.parse('ws://$websocketAddress:$serverPort/chat'),
-      );
-    });
-    _initializeWebSocket();
   }
 
   Future<void> _checkWebSocketConnectionAndLoadChats() async {
@@ -87,16 +73,34 @@ class ChatListScreenState extends State<ChatListScreen> {
       await _channel.ready;
       print('Websocket connected from chat list');
     } on SocketException catch (e) {
-      print('SocketException occurred: $e');
-      await Future.delayed(const Duration(seconds: 1));
-      return _reconnectWebSocket();
+      print('SocketException occurred in chat list: $e');
     } on WebSocketChannelException catch (e) {
-      print('WebSocketChannelException occurred: $e');
-      await Future.delayed(const Duration(seconds: 1));
-      return _reconnectWebSocket();
+      print('WebSocketChannelException occurred in chat list: $e');
     }
 
     _loadChatsAndSetUserId();
+  }
+
+  Future<void> _reconnectWebSocket() async {
+    print('Attempting to reconnect chat list websocket');
+    await _channel.sink.close();
+    setState(() {
+      _channel = WebSocketChannel.connect(
+        Uri.parse('ws://$websocketAddress:$serverPort/chat'),
+      );
+    });
+    _checkWebSocketConnectionAndLoadChats();
+    
+    _channel.stream.listen(
+      (message) {
+        print('from list after reconnect: $message');
+        _updateChats();
+      },
+      onError: (error) {
+        print('WebSocket error after reconnect: $error');
+        _reconnectWebSocket();
+      }
+    );
   }
 
   Future<void> _loadChatsAndSetUserId() async {
@@ -168,7 +172,7 @@ class ChatListScreenState extends State<ChatListScreen> {
             onPressed: () {
               showModalBottomSheet(
                 context: context,
-                shape: RoundedRectangleBorder(
+                shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 builder: (context) => StatefulBuilder(
@@ -187,7 +191,7 @@ class ChatListScreenState extends State<ChatListScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // --- Первая секция ---
-                          Text("Состояние чатов",
+                          const Text("Состояние чатов",
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           RadioListTile(
                             value: 'archived',
@@ -209,7 +213,7 @@ class ChatListScreenState extends State<ChatListScreen> {
                           ),
                           Divider(),
                           // --- Вторая секция ---
-                          Text("Типы чатов",
+                          const Text("Типы чатов",
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           CheckboxListTile(
                             value: isPersonal,
@@ -364,6 +368,7 @@ class ChatListScreenState extends State<ChatListScreen> {
                   chatId: chat.chatId,
                   chatName: chat.getPrettyChatName(),
                   photoUrl: chat.photoUrl,
+                        anotherUserId: chat.isPersonal() ? chat.getSecondParticipantId(_userId) : null,
                 ),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {

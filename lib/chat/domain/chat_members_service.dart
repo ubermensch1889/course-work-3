@@ -16,7 +16,7 @@ class ChatMembersService {
       throw Exception('Токен не существует');
     }
 
-    final url = Uri.parse('$serverDomain:$serverPort/v1/messenger/chat_members');
+    final url = Uri.parse('https://5716b573-68b3-42b1-a282-2132ac02ea10.mock.pstmn.io/v1/messenger/chat_members');
     final body = jsonEncode({
       'chat_id': chatId,
     });

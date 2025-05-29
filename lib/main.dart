@@ -17,6 +17,7 @@ import 'package:test/start/screens/start_screen.dart';
 import 'package:test/user/domain/firebase_api.dart';
 import 'package:test/user/domain/user_preferences.dart';
 import 'package:test/user/domain/user_preferences_wrapper.dart';
+import 'package:test/chat/screens/chat_screen.dart';
 
 final userPreferencesProvider = Provider<UserPreferencesWrapper>((ref) {
   return UserPreferencesWrapper();
@@ -95,6 +96,7 @@ class MyApp extends ConsumerWidget {
 
     return SafeArea(
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,

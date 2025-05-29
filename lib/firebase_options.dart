@@ -51,11 +51,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBVadHO3pBI2xTdkkUG5vLEWKOJ0USFTIY',
-    appId: '1:590577079005:android:0815800f03d11b9c108134',
-    messagingSenderId: '590577079005',
-    projectId: 'work-day-a2529',
-    storageBucket: 'work-day-a2529.appspot.com',
+    apiKey: 'AIzaSyBjuEnyW7zJAR-XiLyd3kvVmgMWegVUeMk',
+    appId: '1:718924044914:android:ab2af2c1003a21f45740eb',
+    messagingSenderId: '718924044914',
+    projectId: 'course-work-3-2f842',
+    storageBucket: 'course-work-3-2f842.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(

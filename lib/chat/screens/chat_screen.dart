@@ -47,7 +47,7 @@ class ChatScreenState extends State<ChatScreen> {
   String? _chatId;
   bool _isLoading = false;
   bool _isError = false;
-  final _channel = WebSocketChannel.connect(
+  WebSocketChannel _channel = WebSocketChannel.connect(
     Uri.parse('ws://$websocketAddress:$serverPort/chat'),
   );
 
@@ -121,8 +121,6 @@ class ChatScreenState extends State<ChatScreen> {
     print('step 1');
     _getUserId();
     print('step 2');
-
-    _loadMessages();
     print('step 3');
 
     _checkWebSocketConnectionAndLoadChats();
