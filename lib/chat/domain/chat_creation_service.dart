@@ -13,7 +13,7 @@ class ChatCreationService {
   Future<String?> createGroupChat(String chatName, List<String> userIds) async {
     String? token = await UserPreferences.getToken();
     if (token == null) {
-      throw Exception('Токен не существует');
+      throw Exception('Токен авторизации отсутствует');
     }
 
     final url = Uri.parse('$baseUrl/v1/messenger/create-chat');
@@ -22,7 +22,7 @@ class ChatCreationService {
       'id_list': userIds.map((String id) => id).toList() + [await UserPreferences.getUserId()]
     });
 
-    print('тело запроса $body');
+    print('Создание группового чата: $chatName');
     try {
       final response = await http.post(
         url,
@@ -33,24 +33,23 @@ class ChatCreationService {
         body: body
       );
 
-      print('Bearer $token');
-
       if (response.statusCode == 200) {
-        return json.decode(utf8.decode(response.bodyBytes))['chat_id'];
+        final chatId = json.decode(utf8.decode(response.bodyBytes))['chat_id'];
+        print('Групповой чат успешно создан');
+        return chatId;
       }
-      print('Ошибка создания чата: ${response.statusCode}');
-      print('Ответ: ${response.body}');
+      print('Ошибка при создании группового чата. Код: ${response.statusCode}');
+      return null;
     } catch (e) {
-      print('Исключение при создании чата: $e');
+      print('Ошибка при создании группового чата: $e');
+      return null;
     }
-
-    return null;
   }
 
   Future<String?> createPersonalChat(String anotherUserId) async {
     var userId = await UserPreferences.getUserId();
     var chatName = '_ps_${userId}_${anotherUserId}_ps_';
-
+    print('Создание личного чата с пользователем: $anotherUserId');
     return await createGroupChat(chatName, [anotherUserId]);
   }
 
@@ -60,7 +59,7 @@ class ChatCreationService {
     if (pickedFile != null) {
       return File(pickedFile.path);
     } else {
-      print('No image selected');
+      print('Изображение не выбрано');
       return null;
     }
   }
@@ -125,7 +124,7 @@ class ChatCreationService {
         return chats.firstWhere((chat) => chat.isPersonal() && chat.getSecondParticipantId(employeeId) == anotherUserId);
       }
 
-      throw Exception('Failed to load chats: ${response.statusCode}');
+      throw Exception('Ошибка загрузки чатов: ${response.statusCode}');
     } catch (e) {
       print('Исключение при загрузке чатов: $e');
       return null;

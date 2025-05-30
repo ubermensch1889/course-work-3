@@ -56,6 +56,8 @@ dependencies:
   web_socket_channel: ^3.0.1
   marquee: ^2.2.3
   file_picker: ^10.1.9
+  dio: ^5.0.0         # для скачивания
+  permission_handler: ^11.0.0 # для запроса прав на storage (Android 13+)
 
   
 dev_dependencies:

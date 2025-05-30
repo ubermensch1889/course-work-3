@@ -1,21 +1,25 @@
 import 'dart:convert';
 import 'dart:io';
 
-
 import 'package:bubble/bubble.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:marquee/marquee.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:test/chat/domain/chat_creation_service.dart';
 import 'package:test/chat/domain/messaging_service.dart';
+import 'package:test/chat/screens/chat_screen.dart';
 import 'package:test/chat/screens/user_profile_screen.dart';
 import 'package:test/consts.dart';
 import 'package:test/main.dart';
 import 'package:test/search/screens/search_profile_screen.dart';
 import 'package:test/user/domain/user_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:test/notifications/screens/pdf_view_screen.dart';
 
+import '../../user/data/user.dart';
 import '../data/chat.dart';
 import 'group_members_screen.dart';
 
@@ -51,6 +55,7 @@ class ChatScreenState extends State<ChatScreen> {
   bool _isError = false;
   bool _isSending = false;
   bool _isArchived = false;
+  Map<String, User> _messageAuthors = {};
   List<PlatformFile> _selectedFiles = [];
   WebSocketChannel _channel = WebSocketChannel.connect(
     Uri.parse('ws://$websocketAddress:$serverPort/chat'),
@@ -71,6 +76,7 @@ class ChatScreenState extends State<ChatScreen> {
     });
     try {
       _messages = await _messagingService.getRecentMessages(_chatId!);
+      await _loadMessageAuthors();
     } catch (e) {
       setState(() {
         _isError = true;
@@ -82,18 +88,23 @@ class ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // Future<void> _updateMessages() async {
-  //   try {
-  //     final messages = await _messagingService.getRecentMessages(_chatId!);
-  //     setState(() {
-  //       _messages = messages;
-  //     });
-  //   } catch (e) {
-  //     setState(() {
-  //       _isError = true;
-  //     });
-  //   }
-  // }
+  Future<void> _loadMessageAuthors() async {
+    if (widget.anotherUserId == null) return;
+
+    final authorIds = _messages
+        .map((msg) => msg.senderId)
+        .where((id) => id != _userId)
+        .toSet();
+
+    final futures = authorIds.map((id) => UserPreferences.fetchUserInfoById(id));
+    final authors = await Future.wait(futures);
+
+    setState(() {
+      _messageAuthors = {
+        for (var author in authors) author.id: author,
+      };
+    });
+  }
 
   Future<void> _getUserId() async {
     _userId = await UserPreferences.getUserId();
@@ -111,11 +122,11 @@ class ChatScreenState extends State<ChatScreen> {
     });
     try {
       await _channel.ready;
-      print('Websocket connected');
+      print('WebSocket подключен');
     } on SocketException catch (e) {
-      print('SocketException occured: $e');
+      print('Ошибка подключения к WebSocket: $e');
     } on WebSocketChannelException catch (e) {
-      print('WebSocketChannelException occured: $e');
+      print('Ошибка WebSocket канала: $e');
     }
 
     _loadMessages();
@@ -125,18 +136,12 @@ class ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _chatId = widget.chatId;
-    print('step 1');
     _getUserId();
-    print('step 2');
-    print('step 3');
-
     _checkWebSocketConnectionAndLoadChats();
     _loadArchiveStatus();
 
-    print('step 4');
-
     _channel.stream.listen((message) {
-      print('asdasd $message');
+      print('Получено новое сообщение');
       setState(() {
         _messages.add(MessengerMessage.fromJson(json.decode(message.toString())));
       });
@@ -262,12 +267,50 @@ class ChatScreenState extends State<ChatScreen> {
     });
 
     try {
-      // Симулируем загрузку файла с задержкой в 1 секунду
-      await Future.delayed(const Duration(seconds: 1));
+      final List<Media> uploadedMedia = [];
+      for (var file in _selectedFiles) {
+        try {
+          final media = await _messagingService.uploadFile(file);
+          uploadedMedia.add(media);
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Ошибка загрузки файла ${file.name}: $e')),
+            );
+          }
+        }
+      }
+      
+      if (_chatId == null) {
+        var chatId = await _chatCreationService.createPersonalChat(widget.anotherUserId!);
+        if (chatId != null) {
+          _chatId = chatId;
+        } else {
+          throw Exception('Не удалось создать чат');
+        }
+      }
+
+      await _messagingService.sendMessage(
+        _chatId!,
+        _messageController.text,
+        _channel,
+        media: uploadedMedia.isNotEmpty ? uploadedMedia : null,
+      );
+      
+      _messageController.text = '';
+      _clearFiles();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка отправки сообщения: $e')),
+        );
+      }
     } finally {
-      setState(() {
-        _isSending = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
     }
   }
 
@@ -473,34 +516,7 @@ class ChatScreenState extends State<ChatScreen> {
                     ? null
                     : () async {
                         if (_messageController.text.isNotEmpty || _selectedFiles.isNotEmpty) {
-                          print('try send message ${_messageController.text}');
-                          if (_chatId == null) {
-                            var chatId = await _chatCreationService.createPersonalChat(widget.anotherUserId!);
-                            if (chatId != null) {
-                              _chatId = chatId;
-                            } else {
-                              // TODO handle error
-                              return;
-                            }
-                          }
-
-                          if (_selectedFiles.isNotEmpty) {
-                            await _simulateFileUpload();
-                          }
-
-                          // TODO: Upload files and get URLs before sending message
-                          final List<Media> media = _selectedFiles.map((file) => 
-                            Media('image', 'https://i.pinimg.com/originals/ae/9b/e1/ae9be178fac17c37c1ef47e1a0c06241.jpg')).toList();
-
-                          await _messagingService.sendMessage(
-                            _chatId!,
-                            _messageController.text,
-                            _channel,
-                            media: media.isNotEmpty ? media : null,
-                          );
-                          
-                          _messageController.text = '';
-                          _clearFiles();
+                          await _simulateFileUpload();
                         }
                       },
               ),
@@ -639,6 +655,7 @@ class ChatScreenState extends State<ChatScreen> {
     for (int i = 0; i < _messages.length; i++) {
       final msg = _messages[i];
       final msgDate = _formatDate(msg.timestamp);
+      final author = _messageAuthors[msg.senderId];
 
       // Нужно добавить разделитель дня?
       if (lastDate != msgDate) {
@@ -651,6 +668,9 @@ class ChatScreenState extends State<ChatScreen> {
         media: msg.content.media,
         time: msg.getTime(),
         isSentByMe: msg.senderId == _userId,
+        senderName: widget.anotherUserId == null ? author?.getFullName() : null,
+        senderAvatar: widget.anotherUserId == null ? author?.photo_link : null,
+        isGroupChat: widget.anotherUserId == null,
       ));
     }
     return result;
@@ -678,7 +698,7 @@ class ChatScreenState extends State<ChatScreen> {
     return '$day $month';
   }
 
-
+  bool get isGroupChat => widget.anotherUserId == null;
 }
 
 class DateDivider extends StatelessWidget {
@@ -715,13 +735,36 @@ class ChatBubble extends StatelessWidget {
   final List<Media>? media;
   final String time;
   final bool isSentByMe;
+  final String? senderName;
+  final String? senderAvatar;
+  final bool isGroupChat;
 
-  ChatBubble({
+  const ChatBubble({
     this.text,
     this.media,
     required this.time,
     required this.isSentByMe,
+    this.senderName,
+    this.senderAvatar,
+    required this.isGroupChat,
   });
+
+  Future<File> _downloadFile(String url) async {
+    var response = await http.get(Uri.parse(url));
+    var bytes = response.bodyBytes;
+    var dir = await getApplicationDocumentsDirectory();
+    File file = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
+
+  void _openPDF(BuildContext context, File file) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PDFViewPage(file: file),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -741,6 +784,14 @@ class ChatBubble extends StatelessWidget {
       fileMedia = null;
     }
 
+    // Проверим, есть ли PDF
+    Media? pdfMedia;
+    try {
+      pdfMedia = media?.firstWhere((m) => m.type == 'pdf');
+    } catch (_) {
+      pdfMedia = null;
+    }
+
     Widget photoWidget = SizedBox.shrink();
     if (imageMedia != null) {
       photoWidget = ClipRRect(
@@ -749,8 +800,6 @@ class ChatBubble extends StatelessWidget {
           imageMedia.url,
           fit: BoxFit.cover,
           width: 220,
-          // Можно еще ограничить высоту:
-          // height: 200,
           errorBuilder: (c, e, st) =>
               Container(color: Colors.black12, height: 120, width: 220, child: Icon(Icons.broken_image, color: Colors.white54)),
         ),
@@ -763,7 +812,7 @@ class ChatBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white, // Яркий выделенный фон
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.blue.shade200, width: 2),
         ),
@@ -793,14 +842,90 @@ class ChatBubble extends StatelessWidget {
       );
     }
 
+    Widget pdfWidget = SizedBox.shrink();
+    if (pdfMedia != null) {
+      pdfWidget = GestureDetector(
+        onTap: () async {
+          try {
+            File pdfFile = await _downloadFile(pdfMedia!.url);
+            if (context.mounted) {
+              _openPDF(context, pdfFile);
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Ошибка при открытии PDF: $e')),
+              );
+            }
+          }
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.blue.shade200, width: 2),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.picture_as_pdf, color: Color(0xFF164F94), size: 36),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PDF Документ', style: TextStyle(color: Color(0xFF164F94), fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(
+                      'Нажмите, чтобы открыть',
+                      style: TextStyle(
+                          color: Color(0xFF164F94),
+                          decoration: TextDecoration.underline,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     // Сбор содержимого бабла
     List<Widget> bubbleContent = [];
+    
+    // Добавляем имя отправителя для групповых чатов
+    if (isGroupChat && !isSentByMe && senderName != null) {
+      bubbleContent.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
+          child: Text(
+            senderName!,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
+    }
+
     if (photoWidget is! SizedBox) bubbleContent.add(photoWidget);
     if (fileWidget is! SizedBox) bubbleContent.add(fileWidget);
+    if (pdfWidget is! SizedBox) bubbleContent.add(pdfWidget);
     if (text != null && text!.trim().isNotEmpty) {
       bubbleContent.add(
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.only(
+            left: 8,
+            right: 8,
+            top: isGroupChat && !isSentByMe && senderName != null ? 4 : 8,
+            bottom: 8,
+          ),
           child: Text(
             text!,
             style: const TextStyle(
@@ -819,38 +944,61 @@ class ChatBubble extends StatelessWidget {
 
     return Align(
       alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment:
-        isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: maxWidth,
-            ),
-            child: Bubble(
-              alignment: isSentByMe ? Alignment.topRight : Alignment.topLeft,
-              radius: Radius.circular(18.0),
-              margin: BubbleEdges.all(5),
-              nipHeight: 14,
-              nip: isSentByMe ? BubbleNip.rightBottom : BubbleNip.leftBottom,
-              color: const Color.fromRGBO(22, 79, 148, 1),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: bubbleContent,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: isSentByMe ? 0 : 8,
+          right: isSentByMe ? 8 : 0,
+        ),
+        child: Row(
+          mainAxisAlignment: isSentByMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!isSentByMe && isGroupChat) ...[
+              CircleAvatar(
+                radius: 16,
+                backgroundImage: senderAvatar != null ? NetworkImage(senderAvatar!) : null,
+                child: senderAvatar == null
+                    ? Text(
+                        senderName?.isNotEmpty == true ? senderName![0].toUpperCase() : '?',
+                        style: TextStyle(fontSize: 14),
+                      )
+                    : null,
               ),
+              SizedBox(width: 8),
+            ],
+            Column(
+              crossAxisAlignment:
+                  isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  constraints: BoxConstraints(
+                    maxWidth: maxWidth,
+                  ),
+                  child: Bubble(
+                    nip: isSentByMe ? BubbleNip.rightTop : BubbleNip.leftTop,
+                    color: isSentByMe
+                        ? const Color.fromRGBO(22, 79, 148, 1)
+                        : const Color.fromRGBO(22, 79, 148, 0.8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: bubbleContent,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 4),
+                  child: Text(
+                    time,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(right: 10, left: 10),
-            child: Text(
-              time,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

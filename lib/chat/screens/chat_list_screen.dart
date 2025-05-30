@@ -43,14 +43,14 @@ class ChatListScreenState extends State<ChatListScreen> {
     super.initState();
     _checkWebSocketConnectionAndLoadChats();
     
-    print('chat list socket listening started');
+    print('Начало прослушивания WebSocket для списка чатов');
     _channel.stream.listen(
       (message) {
-        print('from list $message');
+        print('Получено обновление списка чатов');
         _updateChats();
       },
       onError: (error) {
-        print('WebSocket error in chat list: $error');
+        print('Ошибка WebSocket в списке чатов: $error');
         _reconnectWebSocket();
       }
     );
@@ -62,18 +62,18 @@ class ChatListScreenState extends State<ChatListScreen> {
     });
     try {
       await _channel.ready;
-      print('Websocket connected from chat list');
+      print('WebSocket подключен для списка чатов');
     } on SocketException catch (e) {
-      print('SocketException occurred in chat list: $e');
+      print('Ошибка подключения к WebSocket для списка чатов: $e');
     } on WebSocketChannelException catch (e) {
-      print('WebSocketChannelException occurred in chat list: $e');
+      print('Ошибка WebSocket канала для списка чатов: $e');
     }
 
     _loadChatsAndSetUserId();
   }
 
   Future<void> _reconnectWebSocket() async {
-    print('Attempting to reconnect chat list websocket');
+    print('Попытка переподключения WebSocket для списка чатов');
     await _channel.sink.close();
     setState(() {
       _channel = WebSocketChannel.connect(
@@ -84,11 +84,11 @@ class ChatListScreenState extends State<ChatListScreen> {
     
     _channel.stream.listen(
       (message) {
-        print('from list after reconnect: $message');
+        print('Получено обновление после переподключения');
         _updateChats();
       },
       onError: (error) {
-        print('WebSocket error after reconnect: $error');
+        print('Ошибка WebSocket после переподключения: $error');
         _reconnectWebSocket();
       }
     );
@@ -104,7 +104,7 @@ class ChatListScreenState extends State<ChatListScreen> {
       ]);
       _applyFilters();
     } catch (e) {
-      print('ошибка загрузки чатов $e');
+      print('Ошибка при обновлении списка чатов: $e');
       setState(() {
         _isError = true;
       });
@@ -146,7 +146,7 @@ class ChatListScreenState extends State<ChatListScreen> {
       ]);
       _applyFilters();
     } catch (e) {
-      print('ошибка загрузки чатов $e');
+      print('Ошибка при загрузке чатов: $e');
       setState(() {
         _isError = true;
       });
@@ -315,13 +315,13 @@ class ChatListScreenState extends State<ChatListScreen> {
           if (!mounted) return;
           if (chatType != null) {
             if (chatType == 'group') {
-              Navigator.of(context, rootNavigator: true).push(
+              await Navigator.of(context, rootNavigator: true).push(
                 PageRouteBuilder(
                   pageBuilder: (context, animation, secondaryAnimation) =>
                       const GroupMembersChoosingScreen(),
                   transitionsBuilder:
                       (context, animation, secondaryAnimation, child) {
-                    const begin = Offset(1.0, 0.0); // от правого края экрана
+                    const begin = Offset(1.0, 0.0);
                     const end = Offset.zero;
                     const curve = Curves.ease;
                     final tween = Tween(begin: begin, end: end)
@@ -333,14 +333,15 @@ class ChatListScreenState extends State<ChatListScreen> {
                   },
                 ),
               );
+              await _updateChats();
             } else if (chatType == 'personal') {
-              Navigator.of(context, rootNavigator: true).push(
+              final result = await Navigator.of(context, rootNavigator: true).push(
                 PageRouteBuilder(
                   pageBuilder: (context, animation, secondaryAnimation) =>
                       PersonalChatMemberChoosingScreen(channel: _channel),
                   transitionsBuilder:
                       (context, animation, secondaryAnimation, child) {
-                    const begin = Offset(1.0, 0.0); // от правого края экрана
+                    const begin = Offset(1.0, 0.0);
                     const end = Offset.zero;
                     const curve = Curves.ease;
                     final tween = Tween(begin: begin, end: end)
@@ -352,6 +353,7 @@ class ChatListScreenState extends State<ChatListScreen> {
                   },
                 ),
               );
+              await _updateChats();
             }
           }
         },

@@ -1,10 +1,8 @@
 import 'dart:io';
-
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:test/chat/data/chat.dart';
-import 'dart:convert';
 import 'package:test/chat/data/chat.dart';
 import 'package:test/consts.dart';
 import 'package:test/user/domain/user_preferences.dart';
@@ -15,7 +13,7 @@ class MessagingService {
     String employeeId = await UserPreferences.getUserId();
     String? companyId = await UserPreferences.getCompanyId();
     if (companyId == null) {
-      throw Exception("Unauthorised user can not send messages");
+      throw Exception("Неавторизованный пользователь не может отправлять сообщения");
     }
 
     final message = {
@@ -34,18 +32,17 @@ class MessagingService {
 
     try {
       channel.sink.add(jsonMessage);
-
-      print('Sent: $jsonMessage');
+      print('Сообщение отправлено: ${content.length > 50 ? '${content.substring(0, 50)}...' : content}');
     } catch (e) {
-      print('Исключение при отправке сообщения: $e');
-      throw Exception('Exception during message sending: $e');
+      print('Ошибка при отправке сообщения: $e');
+      throw Exception('Ошибка при отправке сообщения: $e');
     }
   }
 
   Future<List<MessengerMessage>> getRecentMessages(String chatId) async {
     String? token = await UserPreferences.getToken();
     if (token == null) {
-      throw Exception('Токен не существует');
+      throw Exception('Токен авторизации отсутствует');
     }
 
     final url = Uri.parse('$baseUrl/v1/messenger/recent-messages');
@@ -63,32 +60,28 @@ class MessagingService {
           body: body
       );
 
-      print('Bearer $token');
-
       if (response.statusCode == 200) {
-        print('Ответ сервера: ${utf8.decode(response.bodyBytes)}');
         var bodyRaw = json.decode(utf8.decode(response.bodyBytes));
         if (bodyRaw == null) {
           return List.empty();
         }
         List<dynamic> body = bodyRaw;
 
-        print('govb');
-        print(body.isNotEmpty ? body[0] : 'empty');
-        List<MessengerMessage> messages = body.map((dynamic item) => MessengerMessage.fromJson(json.decode(item))).toList();
+        List<MessengerMessage> messages = body
+            .map((dynamic item) => MessengerMessage.fromJson(json.decode(item)))
+            .toList();
 
         if (messages.isNotEmpty && messages[messages.length - 1].senderId.isEmpty) {
           messages.removeAt(messages.length - 1);
         }
-        print('jop');
+        
+        print('Загружено ${messages.length} сообщений');
         return messages.reversed.toList();
       }
-      print('Ошибка загрузки сообщений: ${response.statusCode}');
-      print('Ответ: ${response.body}');
-      throw Exception('Failed to load messages: ${response.statusCode}');
 
+      throw Exception('Не удалось загрузить сообщения');
     } catch (e) {
-      print('Исключение при получении сообщений: $e');
+      print('Ошибка при получении сообщений: $e');
       rethrow;
     }
   }
@@ -96,6 +89,7 @@ class MessagingService {
   Future<List<PlatformFile>?> pickFiles({bool allowMultiple = false}) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: allowMultiple,
+      type: FileType.any,
     );
 
     if (result != null) {
@@ -104,4 +98,44 @@ class MessagingService {
     return null;
   }
 
+  Future<Media> uploadFile(PlatformFile file) async {
+    String? token = await UserPreferences.getToken();
+    if (token == null) {
+      throw Exception('Токен авторизации отсутствует');
+    }
+
+    // Получаем URL для загрузки файла
+    final uploadUrlResponse = await http.get(
+      Uri.parse('$baseUrl/v1/messenger/get-upload-url'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (uploadUrlResponse.statusCode != 200) {
+      throw Exception('Не удалось получить URL для загрузки файла');
+    }
+
+    final uploadUrl = json.decode(uploadUrlResponse.body)['url'];
+    
+    // Загружаем файл
+    final fileBytes = await File(file.path!).readAsBytes();
+    final uploadResponse = await http.put(
+      Uri.parse(uploadUrl),
+      body: fileBytes,
+      headers: {'Content-Type': 'application/octet-stream'},
+    );
+
+    if (uploadResponse.statusCode != 200) {
+      throw Exception('Ошибка при загрузке файла');
+    }
+
+    // Определяем тип файла
+    String mediaType = 'file';
+    if (file.extension?.toLowerCase() == 'pdf') {
+      mediaType = 'pdf';
+    } else if (['jpg', 'jpeg', 'png', 'gif'].contains(file.extension?.toLowerCase())) {
+      mediaType = 'image';
+    }
+
+    return Media(mediaType, uploadUrl.split('?')[0]); // Возвращаем URL без параметров запроса
+  }
 }

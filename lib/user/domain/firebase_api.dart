@@ -38,13 +38,15 @@ class FirebaseAPI {
       // Get the navigator key from your app's context
       final context = navigatorKey.currentContext;
       if (context != null) {
+        print('GOT MESSAGE');
         Navigator.of(context, rootNavigator: true).push(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 ChatScreen(
-                  chatId: chatId,
-                  chatName: chatId,
-                  photoUrl: null,
+                  chatId: message.data['chatId'],
+                  chatName: message.data['chatName'],
+                  photoUrl: message.data['photoLink'],
+                  anotherUserId: message.data['anotherUserId'],
                 ),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {

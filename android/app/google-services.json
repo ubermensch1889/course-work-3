@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "718924044914",
-    "project_id": "course-work-3-2f842",
-    "storage_bucket": "course-work-3-2f842.firebasestorage.app"
+    "project_number": "590577079005",
+    "project_id": "work-day-a2529",
+    "storage_bucket": "work-day-a2529.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:718924044914:android:ab2af2c1003a21f45740eb",
+        "mobilesdk_app_id": "1:590577079005:android:0815800f03d11b9c108134",
         "android_client_info": {
           "package_name": "com.example.test"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBjuEnyW7zJAR-XiLyd3kvVmgMWegVUeMk"
+          "current_key": "AIzaSyBVadHO3pBI2xTdkkUG5vLEWKOJ0USFTIY"
         }
       ],
       "services": {

@@ -138,7 +138,7 @@ class MessengerListedChatInfo {
 
     var words = chatName.split('_');
     if (words.length != 6) {
-      throw Exception('Incorrect chat name format.');
+      throw Exception('Некорректный формат названия чата.');
     }
 
     return words[2] == userId ? words[3] : words[2];

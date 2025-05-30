@@ -166,7 +166,7 @@ class ProfileContentState extends State<ProfileContent> {
                 ),
                 const SizedBox(height: 15),
                 Text(
-                  '${user.surname} ${user.name} ${user.patronymic}',
+                  '${user.surname} ${user.name}',
                   style: const TextStyle(fontFamily: 'CeraPro', fontSize: 18),
                 ),
                 const SizedBox(height: 15),

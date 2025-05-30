@@ -228,4 +228,34 @@ class PersonalChatMemberChoosingScreenState
       );
     }
   }
+
+  Future<void> _createPersonalChat(String userId) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final chatId = await _chatCreationService.createPersonalChat(userId);
+      
+      if (!mounted) return;
+      if (chatId != null) {
+        Navigator.of(context).pop(true); // Возвращаем true при успешном создании
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось создать чат')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ошибка при создании чата')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 }

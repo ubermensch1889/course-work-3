@@ -3,7 +3,6 @@
 import 'package:http/http.dart' as http;
 import 'package:test/chat/data/chat.dart';
 import 'dart:convert';
-import 'package:test/chat/data/chat.dart';
 import 'package:test/consts.dart';
 import 'package:test/user/domain/user_preferences.dart';
 
@@ -47,13 +46,10 @@ class ChatListService {
         });
         return chats;
       }
-      print('Ошибка загрузки чатов: ${response.statusCode}');
-      print('Ответ: ${response.body}');
       throw Exception('Failed to load chats: ${response.statusCode}');
 
     } catch (e) {
-      print('Исключение при загрузке чатов: $e');
-      throw Exception('Exception during fetchDocuments: $e');
+      throw Exception('Исключение при загрузке чатов: $e');
     }
   }
 
@@ -67,7 +63,6 @@ class ChatListService {
       if (!chat.isPersonal()) {
         continue;
       }
-      print('trying to add');
       tasks.add(() async {
         final secondParticipantId = chat.getSecondParticipantId(userId);
         if (secondParticipantId == null) return;
@@ -75,14 +70,13 @@ class ChatListService {
         try {
           anotherUser = await UserPreferences.fetchUserInfoById(secondParticipantId);
         } catch (e) {
-          print("Error fetching user: $e");
+          print("Ошибка загрузки пользователей: $e");
           return;
         }
 
         chat.photoUrl = anotherUser.photo_link;
         chat.personalChatName = anotherUser.getFullName();
       }());
-      print('trying to add1');
     }
 
     await Future.wait(tasks);
@@ -93,16 +87,11 @@ class ChatListService {
   Future<List<MessengerListedChatInfo>> searchChats(String query) async {
     _cachedChats ??= await fetchAndAdjustChats();
 
-    print('govno');
-
     if (query.isEmpty) {
       return [];
     }
 
-    print('asdasd');
-
     final normalizedQuery = query.toLowerCase().trim();
-    print('aaaaa $normalizedQuery');
     return _cachedChats!.where((chat) {
       final name = chat.getPrettyChatName().toLowerCase();
       return name.contains(normalizedQuery);
