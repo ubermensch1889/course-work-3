@@ -50,6 +50,7 @@ class ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
   bool _isError = false;
   bool _isSending = false;
+  bool _isArchived = false;
   List<PlatformFile> _selectedFiles = [];
   WebSocketChannel _channel = WebSocketChannel.connect(
     Uri.parse('ws://$websocketAddress:$serverPort/chat'),
@@ -130,6 +131,7 @@ class ChatScreenState extends State<ChatScreen> {
     print('step 3');
 
     _checkWebSocketConnectionAndLoadChats();
+    _loadArchiveStatus();
 
     print('step 4');
 
@@ -139,6 +141,50 @@ class ChatScreenState extends State<ChatScreen> {
         _messages.add(MessengerMessage.fromJson(json.decode(message.toString())));
       });
     });
+  }
+
+  Future<void> _loadArchiveStatus() async {
+    if (_chatId != null) {
+      final isArchived = await UserPreferences.isChatArchived(_chatId!);
+      if (mounted) {
+        setState(() {
+          _isArchived = isArchived;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleArchiveStatus() async {
+    if (_chatId == null) return;
+
+    try {
+      if (_isArchived) {
+        await UserPreferences.unarchiveChat(_chatId!);
+      } else {
+        await UserPreferences.archiveChat(_chatId!);
+      }
+
+      setState(() {
+        _isArchived = !_isArchived;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isArchived ? 'Чат архивирован' : 'Чат разархивирован'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не удалось изменить статус архивации'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _handleHeaderTap() {
@@ -319,14 +365,14 @@ class ChatScreenState extends State<ChatScreen> {
               PopupMenuButton<String>(
                 iconSize: 40,
                 icon: const Icon(Icons.more_vert),
-                onSelected: (String value) {
+                onSelected: (String value) async {
                   if (value == 'mute') {
-                    // Логика отключения уведомлений
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Уведомления отключены')),
                     );
+                  } else if (value == 'archive') {
+                    await _toggleArchiveStatus();
                   }
-                  // Место для другой логики
                 },
                 itemBuilder: (BuildContext context) => [
                   const PopupMenuItem<String>(
@@ -339,17 +385,19 @@ class ChatScreenState extends State<ChatScreen> {
                       ],
                     ),
                   ),
-                  const PopupMenuItem<String>(
+                  PopupMenuItem<String>(
                     value: 'archive',
                     child: Row(
                       children: [
-                        Icon(Icons.archive_rounded, color: Colors.grey),
+                        Icon(
+                          _isArchived ? Icons.unarchive : Icons.archive_rounded,
+                          color: Colors.grey,
+                        ),
                         SizedBox(width: 12),
-                        Text('Архивировать чат'),
+                        Text(_isArchived ? 'Разархивировать чат' : 'Архивировать чат'),
                       ],
                     ),
                   ),
-                  // Добавьте другие PopupMenuItem при необходимости
                 ],
               ),
 

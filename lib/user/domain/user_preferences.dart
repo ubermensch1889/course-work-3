@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/user/data/user_action.dart';
 
 class UserPreferences {
+  static const String _archivedChatsKey = 'archived_chats';
+
   static Future<void> saveCompanyId(String companyId) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     print("Saving company_id: $companyId");
@@ -138,5 +140,30 @@ class UserPreferences {
     } else {
       throw Exception('Ошибка сервера: ${response.statusCode}');
     }
+  }
+
+  static Future<Set<String>> getArchivedChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final archivedChats = prefs.getStringList(_archivedChatsKey) ?? [];
+    return archivedChats.toSet();
+  }
+
+  static Future<void> archiveChat(String chatId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final archivedChats = await getArchivedChats();
+    archivedChats.add(chatId);
+    await prefs.setStringList(_archivedChatsKey, archivedChats.toList());
+  }
+
+  static Future<void> unarchiveChat(String chatId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final archivedChats = await getArchivedChats();
+    archivedChats.remove(chatId);
+    await prefs.setStringList(_archivedChatsKey, archivedChats.toList());
+  }
+
+  static Future<bool> isChatArchived(String chatId) async {
+    final archivedChats = await getArchivedChats();
+    return archivedChats.contains(chatId);
   }
 }

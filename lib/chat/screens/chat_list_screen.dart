@@ -28,53 +28,21 @@ class ChatListScreenState extends State<ChatListScreen> {
   late List<MessengerListedChatInfo> _chats = [];
   late List<MessengerListedChatInfo> _filteredChats = [];
   late String _userId;
+  String _chatState = 'active';
+  bool _showPersonal = true;
+  bool _showGroup = true;
+  Set<String> _archivedChats = {};
   WebSocketChannel _channel = WebSocketChannel.connect(
     Uri.parse('ws://$websocketAddress:$serverPort/chat'),
   );
   bool _isLoading = true;
   bool _isError = false;
-  String _chatState = 'active';
-  bool _showPersonal = true;
-  bool _showGroup = true;
-
-  Future<void> _updateChats() async {
-    try {
-      final chats = await chatListService.fetchAndAdjustChats();
-      setState(() {
-        _chats = chats;
-        _applyFilters();
-      });
-    } catch (e) {
-      print('ошибка загрузки чатов $e');
-      setState(() {
-        _isError = true;
-      });
-    }
-  }
-
-  void _applyFilters() {
-    setState(() {
-      _filteredChats = _chats.where((chat) {
-        // Фильтр по типу чата
-        if (!_showPersonal && chat.isPersonal()) return false;
-        if (!_showGroup && !chat.isPersonal()) return false;
-
-        // TODO: Добавить фильтр по состоянию чата (архивированные/активные)
-        // когда будет соответствующее API
-        if (_chatState == 'archived') {
-          return false; // Временно скрываем все при выборе архивированных
-        }
-
-        return true;
-      }).toList();
-    });
-  }
 
   @override
   void initState() {
     super.initState();
     _checkWebSocketConnectionAndLoadChats();
-
+    
     print('chat list socket listening started');
     _channel.stream.listen(
       (message) {
@@ -113,7 +81,7 @@ class ChatListScreenState extends State<ChatListScreen> {
       );
     });
     _checkWebSocketConnectionAndLoadChats();
-
+    
     _channel.stream.listen(
       (message) {
         print('from list after reconnect: $message');
@@ -126,14 +94,57 @@ class ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
+  Future<void> _updateChats() async {
+    try {
+      await Future.wait([
+        _loadArchivedChats(),
+        () async {
+          _chats = await chatListService.fetchAndAdjustChats();
+        }(),
+      ]);
+      _applyFilters();
+    } catch (e) {
+      print('ошибка загрузки чатов $e');
+      setState(() {
+        _isError = true;
+      });
+    }
+  }
+
+  Future<void> _loadArchivedChats() async {
+    _archivedChats = await UserPreferences.getArchivedChats();
+  }
+
+  void _applyFilters() {
+    setState(() {
+      _filteredChats = _chats.where((chat) {
+        // Проверяем статус архивации
+        final isArchived = _archivedChats.contains(chat.chatId);
+        if (_chatState == 'archived' && !isArchived) return false;
+        if (_chatState == 'active' && isArchived) return false;
+
+        // Фильтр по типу чата
+        if (!_showPersonal && chat.isPersonal()) return false;
+        if (!_showGroup && !chat.isPersonal()) return false;
+        
+        return true;
+      }).toList();
+    });
+  }
+
   Future<void> _loadChatsAndSetUserId() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      _chats = await chatListService.fetchAndAdjustChats();
-      _filteredChats = _chats;
-      _userId = await UserPreferences.getUserId();
+      await Future.wait([
+        _loadArchivedChats(),
+        () async {
+          _chats = await chatListService.fetchAndAdjustChats();
+          _userId = await UserPreferences.getUserId();
+        }(),
+      ]);
+      _applyFilters();
     } catch (e) {
       print('ошибка загрузки чатов $e');
       setState(() {
@@ -269,7 +280,7 @@ class ChatListScreenState extends State<ChatListScreen> {
         ],
       ),
       body: getBody(),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: _chatState == 'active' ? FloatingActionButton(
         onPressed: () async {
           final chatType = await showModalBottomSheet<String>(
             context: context,
@@ -349,7 +360,7 @@ class ChatListScreenState extends State<ChatListScreen> {
         elevation: 12,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 30),
-      ),
+      ) : null,
     );
   }
 
@@ -365,14 +376,41 @@ class ChatListScreenState extends State<ChatListScreen> {
     if (_isError) {
       return Scaffold(
         body: Center(
-            child:
-                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Text('Ошибка загрузки чатов.'),
-          TextButton(
-            onPressed: _updateChats,
-            child: const Text('Обновить')
-          )
-        ])),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Ошибка загрузки чатов.'),
+              TextButton(
+                onPressed: _updateChats,
+                child: const Text('Обновить')
+              )
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_filteredChats.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _chatState == 'archived' ? Icons.archive : Icons.chat_bubble_outline,
+              size: 80,
+              color: Color.fromRGBO(22, 79, 148, 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _chatState == 'archived' ? 'Нет архивированных чатов' : 'Нет активных чатов',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color.fromRGBO(22, 79, 148, 0.8),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -381,16 +419,16 @@ class ChatListScreenState extends State<ChatListScreen> {
       itemBuilder: (context, index) {
         final chat = _filteredChats[index];
         return ListTile(
-          onTap: () {
-            Navigator.of(context, rootNavigator: true).push(
+          onTap: () async {
+            final result = await Navigator.of(context, rootNavigator: true).push(
               PageRouteBuilder(
                 pageBuilder: (context, animation, secondaryAnimation) =>
                     ChatScreen(
-                  chatId: chat.chatId,
-                  chatName: chat.getPrettyChatName(),
-                  photoUrl: chat.photoUrl,
-                        anotherUserId: chat.isPersonal() ? chat.getSecondParticipantId(_userId) : null,
-                ),
+                      chatId: chat.chatId,
+                      chatName: chat.getPrettyChatName(),
+                      photoUrl: chat.photoUrl,
+                      anotherUserId: chat.isPersonal() ? chat.getSecondParticipantId(_userId) : null,
+                    ),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
                   const begin = Offset(1.0, 0.0);
@@ -405,6 +443,9 @@ class ChatListScreenState extends State<ChatListScreen> {
                 },
               ),
             );
+            
+            // Обновляем список чатов при возвращении
+            await _updateChats();
           },
           leading: CircleAvatar(
             backgroundImage:
