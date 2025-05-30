@@ -10,6 +10,8 @@ import 'package:test/user/domain/user_preferences.dart';
 import '../../user/data/user.dart';
 
 class ChatListService {
+  List<MessengerListedChatInfo>? _cachedChats;
+
   Future<List<MessengerListedChatInfo>> _fetchChats() async {
     String? token = await UserPreferences.getToken();
     if (token == null) {
@@ -56,12 +58,12 @@ class ChatListService {
   }
 
   Future<List<MessengerListedChatInfo>> fetchAndAdjustChats() async {
-    var chats = await _fetchChats();
+    _cachedChats = await _fetchChats();
     final userId = await UserPreferences.getUserId();
 
     List<Future<void>> tasks = [];
 
-    for (var chat in chats) {
+    for (var chat in _cachedChats!) {
       if (!chat.isPersonal()) {
         continue;
       }
@@ -85,6 +87,25 @@ class ChatListService {
 
     await Future.wait(tasks);
 
-    return chats;
+    return _cachedChats!;
+  }
+
+  Future<List<MessengerListedChatInfo>> searchChats(String query) async {
+    _cachedChats ??= await fetchAndAdjustChats();
+
+    print('govno');
+
+    if (query.isEmpty) {
+      return [];
+    }
+
+    print('asdasd');
+
+    final normalizedQuery = query.toLowerCase().trim();
+    print('aaaaa $normalizedQuery');
+    return _cachedChats!.where((chat) {
+      final name = chat.getPrettyChatName().toLowerCase();
+      return name.contains(normalizedQuery);
+    }).toList();
   }
 }

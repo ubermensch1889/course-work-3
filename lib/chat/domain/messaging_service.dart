@@ -1,4 +1,8 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:test/chat/data/chat.dart';
 import 'dart:convert';
 import 'package:test/chat/data/chat.dart';
@@ -7,7 +11,7 @@ import 'package:test/user/domain/user_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class MessagingService {
-  Future<void> sendMessage(String chatId, String content, WebSocketChannel channel) async {
+  Future<void> sendMessage(String chatId, String content, WebSocketChannel channel, {List<Media>? media}) async {
     String employeeId = await UserPreferences.getUserId();
     String? companyId = await UserPreferences.getCompanyId();
     if (companyId == null) {
@@ -19,7 +23,11 @@ class MessagingService {
       'sender_id': employeeId,
       'content': {
         'content': content,
-        'company_id': companyId
+        'company_id': companyId,
+        if (media != null && media.isNotEmpty) 'media': media.map((m) => {
+          'type': m.type,
+          'url': m.url
+        }).toList(),
       }
     };
     final jsonMessage = json.encode(message);
@@ -84,4 +92,16 @@ class MessagingService {
       rethrow;
     }
   }
+
+  Future<List<PlatformFile>?> pickFiles({bool allowMultiple = false}) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: allowMultiple,
+    );
+
+    if (result != null) {
+      return result.files;
+    }
+    return null;
+  }
+
 }

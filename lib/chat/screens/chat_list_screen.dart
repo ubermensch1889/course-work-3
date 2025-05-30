@@ -26,18 +26,23 @@ class ChatListScreen extends StatefulWidget {
 class ChatListScreenState extends State<ChatListScreen> {
   final ChatListService chatListService = ChatListService();
   late List<MessengerListedChatInfo> _chats = [];
+  late List<MessengerListedChatInfo> _filteredChats = [];
   late String _userId;
   WebSocketChannel _channel = WebSocketChannel.connect(
     Uri.parse('ws://$websocketAddress:$serverPort/chat'),
   );
   bool _isLoading = true;
   bool _isError = false;
+  String _chatState = 'active';
+  bool _showPersonal = true;
+  bool _showGroup = true;
 
   Future<void> _updateChats() async {
     try {
       final chats = await chatListService.fetchAndAdjustChats();
       setState(() {
         _chats = chats;
+        _applyFilters();
       });
     } catch (e) {
       print('ошибка загрузки чатов $e');
@@ -47,11 +52,29 @@ class ChatListScreenState extends State<ChatListScreen> {
     }
   }
 
+  void _applyFilters() {
+    setState(() {
+      _filteredChats = _chats.where((chat) {
+        // Фильтр по типу чата
+        if (!_showPersonal && chat.isPersonal()) return false;
+        if (!_showGroup && !chat.isPersonal()) return false;
+
+        // TODO: Добавить фильтр по состоянию чата (архивированные/активные)
+        // когда будет соответствующее API
+        if (_chatState == 'archived') {
+          return false; // Временно скрываем все при выборе архивированных
+        }
+
+        return true;
+      }).toList();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _checkWebSocketConnectionAndLoadChats();
-    
+
     print('chat list socket listening started');
     _channel.stream.listen(
       (message) {
@@ -90,7 +113,7 @@ class ChatListScreenState extends State<ChatListScreen> {
       );
     });
     _checkWebSocketConnectionAndLoadChats();
-    
+
     _channel.stream.listen(
       (message) {
         print('from list after reconnect: $message');
@@ -109,6 +132,7 @@ class ChatListScreenState extends State<ChatListScreen> {
     });
     try {
       _chats = await chatListService.fetchAndAdjustChats();
+      _filteredChats = _chats;
       _userId = await UserPreferences.getUserId();
     } catch (e) {
       print('ошибка загрузки чатов $e');
@@ -177,60 +201,60 @@ class ChatListScreenState extends State<ChatListScreen> {
                 ),
                 builder: (context) => StatefulBuilder(
                   builder: (context, setModalState) {
-                    // Локальное состояние для радио и чеков
-                    String chatState = 'active'; // active или archived
-                    bool isPersonal = true;
-                    bool isGroup = true;
-
-                    final optionTextStyle = TextStyle(fontSize: 15);
-
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                           vertical: 20, horizontal: 18),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // --- Первая секция ---
-                          const Text("Состояние чатов",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text(
+                            "Состояние чатов",
+                            style: TextStyle(fontWeight: FontWeight.bold)
+                          ),
                           RadioListTile(
                             value: 'archived',
-                            groupValue: chatState,
+                            groupValue: _chatState,
                             onChanged: (value) {
-                              setModalState(() => chatState = value!);
+                              setModalState(() => _chatState = value!);
+                              _applyFilters();
                             },
                             title: Text('Архивированные чаты',
-                                style: optionTextStyle),
+                                style: TextStyle(fontSize: 15)),
                           ),
                           RadioListTile(
                             value: 'active',
-                            groupValue: chatState,
+                            groupValue: _chatState,
                             onChanged: (value) {
-                              setModalState(() => chatState = value!);
+                              setModalState(() => _chatState = value!);
+                              _applyFilters();
                             },
-                            title:
-                                Text('Активные чаты', style: optionTextStyle),
+                            title: Text('Активные чаты',
+                                style: TextStyle(fontSize: 15)),
                           ),
-                          Divider(),
-                          // --- Вторая секция ---
-                          const Text("Типы чатов",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Divider(),
+                          const Text(
+                            "Типы чатов",
+                            style: TextStyle(fontWeight: FontWeight.bold)
+                          ),
                           CheckboxListTile(
-                            value: isPersonal,
+                            value: _showPersonal,
                             onChanged: (value) {
-                              setModalState(() => isPersonal = value!);
+                              setModalState(() => _showPersonal = value!);
+                              _applyFilters();
                             },
-                            title: Text("Личные чаты", style: optionTextStyle),
+                            title: Text("Личные чаты",
+                                style: TextStyle(fontSize: 15)),
                             controlAffinity: ListTileControlAffinity.leading,
                             dense: true,
                           ),
                           CheckboxListTile(
-                            value: isGroup,
+                            value: _showGroup,
                             onChanged: (value) {
-                              setModalState(() => isGroup = value!);
+                              setModalState(() => _showGroup = value!);
+                              _applyFilters();
                             },
-                            title:
-                                Text("Групповые чаты", style: optionTextStyle),
+                            title: Text("Групповые чаты",
+                                style: TextStyle(fontSize: 15)),
                             controlAffinity: ListTileControlAffinity.leading,
                             dense: true,
                           ),
@@ -239,13 +263,7 @@ class ChatListScreenState extends State<ChatListScreen> {
                     );
                   },
                 ),
-              ).then((selectedFilters) {
-                if (selectedFilters != null) {
-                  print(selectedFilters);
-                  // Обработка фильтров
-                  // Например: setState(() { ... });
-                }
-              });
+              );
             },
           ),
         ],
@@ -350,15 +368,18 @@ class ChatListScreenState extends State<ChatListScreen> {
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Text('Ошибка загрузки чатов.'),
-          TextButton(onPressed: () => {}, child: const Text('Обновить'))
+          TextButton(
+            onPressed: _updateChats,
+            child: const Text('Обновить')
+          )
         ])),
       );
     }
 
     return ListView.separated(
-      itemCount: _chats.length,
+      itemCount: _filteredChats.length,
       itemBuilder: (context, index) {
-        final chat = _chats[index];
+        final chat = _filteredChats[index];
         return ListTile(
           onTap: () {
             Navigator.of(context, rootNavigator: true).push(

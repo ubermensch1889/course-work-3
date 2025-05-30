@@ -18,7 +18,9 @@ class MessengerMessageContent {
 
   factory MessengerMessageContent.fromJson(Map<String, dynamic> json) {
     if (json.containsKey('media')) {
-      return MessengerMessageContent(content: json['content'], media: json['media'].map((dynamic item) => Media.fromJson(item)).toList());
+      List<dynamic> media_json = json['media'];
+      List<Media> media = media_json.map((dynamic item) => Media.fromJson(item)).toList();
+      return MessengerMessageContent(content: json['content'], media: media);
     }
     return MessengerMessageContent(content: json['content']);
   }
@@ -49,7 +51,14 @@ class MessengerMessage {
 
   factory MessengerMessage.fromJson(Map<String, dynamic> json) {
     var content = MessengerMessageContent.fromJson(json['content']);
-    var timestamp = DateTime.parse(json['timestamp']);
+    DateTime timestamp;
+
+    if (json.containsKey('timestamp')) {
+      timestamp = DateTime.parse(json['timestamp']);
+    }
+    else {
+      timestamp = DateTime.now();
+    }
 
     return MessengerMessage(
         chatId: json['chat_id'],

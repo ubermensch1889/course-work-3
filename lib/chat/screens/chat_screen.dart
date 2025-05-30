@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 
 import 'package:bubble/bubble.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:marquee/marquee.dart';
@@ -47,9 +49,13 @@ class ChatScreenState extends State<ChatScreen> {
   String? _chatId;
   bool _isLoading = false;
   bool _isError = false;
+  bool _isSending = false;
+  List<PlatformFile> _selectedFiles = [];
   WebSocketChannel _channel = WebSocketChannel.connect(
     Uri.parse('ws://$websocketAddress:$serverPort/chat'),
   );
+
+  late Future<List<PlatformFile>?> _filesToSendFuture;
 
   Future<void> _loadMessages() async {
     if (_chatId == null) {
@@ -75,18 +81,18 @@ class ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _updateMessages() async {
-    try {
-      final messages = await _messagingService.getRecentMessages(_chatId!);
-      setState(() {
-        _messages = messages;
-      });
-    } catch (e) {
-      setState(() {
-        _isError = true;
-      });
-    }
-  }
+  // Future<void> _updateMessages() async {
+  //   try {
+  //     final messages = await _messagingService.getRecentMessages(_chatId!);
+  //     setState(() {
+  //       _messages = messages;
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       _isError = true;
+  //     });
+  //   }
+  // }
 
   Future<void> _getUserId() async {
     _userId = await UserPreferences.getUserId();
@@ -129,7 +135,9 @@ class ChatScreenState extends State<ChatScreen> {
 
     _channel.stream.listen((message) {
       print('asdasd $message');
-      _updateMessages();
+      setState(() {
+        _messages.add(MessengerMessage.fromJson(json.decode(message.toString())));
+      });
     });
   }
 
@@ -177,130 +185,180 @@ class ChatScreenState extends State<ChatScreen> {
             );
           },
         ),
-      ).then((shouldRefresh) {
-        if (shouldRefresh == true) {
-          _updateMessages();
-        }
+      );
+    }
+  }
+
+  Future<void> _pickFiles() async {
+    final files = await _messagingService.pickFiles(allowMultiple: true);
+    if (files != null) {
+      setState(() {
+        _selectedFiles = files;
       });
     }
   }
 
+  void _removeFile(int index) {
+    setState(() {
+      _selectedFiles.removeAt(index);
+    });
+  }
+
+  void _clearFiles() {
+    setState(() {
+      _selectedFiles = [];
+    });
+  }
+
+  Future<void> _simulateFileUpload() async {
+    setState(() {
+      _isSending = true;
+    });
+
+    try {
+      // Симулируем загрузку файла с задержкой в 1 секунду
+      await Future.delayed(const Duration(seconds: 1));
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+    }
+  }
+
+  Widget _buildLoadingOverlay() {
+    if (!_isSending) return const SizedBox.shrink();
+
+    return Container(
+      color: Colors.black.withOpacity(0.3),
+      child: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(22, 79, 148, 1)),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          iconSize: 30,
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () { Navigator.of(context).pop();
-          if (widget.doublePop) {
-            Navigator.of(context).pop();
-          }}
-        ),
-        toolbarHeight: 90,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            height: 1.0,
-            color: const Color.fromRGBO(22, 79, 148, 1),
-          ),
-        ),
-        centerTitle: true,
-        title: GestureDetector(
-          onTap: _handleHeaderTap,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final text = widget.chatName;
-              const style = TextStyle(
-                fontFamily: 'CeraPro',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              );
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              iconSize: 30,
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () { Navigator.of(context).pop();
+              if (widget.doublePop) {
+                Navigator.of(context).pop();
+              }}
+            ),
+            toolbarHeight: 90,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1.0),
+              child: Container(
+                height: 1.0,
+                color: const Color.fromRGBO(22, 79, 148, 1),
+              ),
+            ),
+            centerTitle: true,
+            title: GestureDetector(
+              onTap: _handleHeaderTap,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final text = widget.chatName;
+                  const style = TextStyle(
+                    fontFamily: 'CeraPro',
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  );
 
-              final textPainter = TextPainter(
-                text: TextSpan(text: text, style: style),
-                maxLines: 1,
-                textDirection: TextDirection.ltr,
-              )..layout(minWidth: 0, maxWidth: double.infinity);
+                  final textPainter = TextPainter(
+                    text: TextSpan(text: text, style: style),
+                    maxLines: 1,
+                    textDirection: TextDirection.ltr,
+                  )..layout(minWidth: 0, maxWidth: double.infinity);
 
-              final textWidth = textPainter.size.width;
+                  final textWidth = textPainter.size.width;
 
-              return Row(
-                children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundImage: widget.photoUrl != null
-                        ? NetworkImage(widget.photoUrl!)
-                        : null,
-                    child: widget.photoUrl != null ? null : Text(widget.chatName[0]),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: SizedBox(
-                      height: 28,
-                      child: textWidth > constraints.maxWidth - 60
-                          ? Marquee(
-                              text: text,
-                              style: style,
-                              scrollAxis: Axis.horizontal,
-                              blankSpace: 40.0,
-                              velocity: 30.0,
-                              pauseAfterRound: const Duration(milliseconds: 1200),
-                            )
-                          : Text(
-                              text,
-                              style: style,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                  return Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundImage: widget.photoUrl != null
+                            ? NetworkImage(widget.photoUrl!)
+                            : null,
+                        child: widget.photoUrl != null ? null : Text(widget.chatName[0]),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: SizedBox(
+                          height: 28,
+                          child: textWidth > constraints.maxWidth - 60
+                              ? Marquee(
+                                  text: text,
+                                  style: style,
+                                  scrollAxis: Axis.horizontal,
+                                  blankSpace: 40.0,
+                                  velocity: 30.0,
+                                  pauseAfterRound: const Duration(milliseconds: 1200),
+                                )
+                              : Text(
+                                  text,
+                                  style: style,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+
+            actions: [
+              PopupMenuButton<String>(
+                iconSize: 40,
+                icon: const Icon(Icons.more_vert),
+                onSelected: (String value) {
+                  if (value == 'mute') {
+                    // Логика отключения уведомлений
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Уведомления отключены')),
+                    );
+                  }
+                  // Место для другой логики
+                },
+                itemBuilder: (BuildContext context) => [
+                  const PopupMenuItem<String>(
+                    value: 'mute',
+                    child: Row(
+                      children: [
+                        Icon(Icons.notifications_off, color: Colors.red),
+                        SizedBox(width: 12),
+                        Text('Отключить уведомления'),
+                      ],
                     ),
                   ),
+                  const PopupMenuItem<String>(
+                    value: 'archive',
+                    child: Row(
+                      children: [
+                        Icon(Icons.archive_rounded, color: Colors.grey),
+                        SizedBox(width: 12),
+                        Text('Архивировать чат'),
+                      ],
+                    ),
+                  ),
+                  // Добавьте другие PopupMenuItem при необходимости
                 ],
-              );
-            },
-          ),
-        ),
+              ),
 
-        actions: [
-          PopupMenuButton<String>(
-            iconSize: 40,
-            icon: const Icon(Icons.more_vert),
-            onSelected: (String value) {
-              if (value == 'mute') {
-                // Логика отключения уведомлений
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Уведомления отключены')),
-                );
-              }
-              // Место для другой логики
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'mute',
-                child: Row(
-                  children: [
-                    Icon(Icons.notifications_off, color: Colors.red),
-                    SizedBox(width: 12),
-                    Text('Отключить уведомления'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'archive',
-                child: Row(
-                  children: [
-                    Icon(Icons.archive_rounded, color: Colors.grey),
-                    SizedBox(width: 12),
-                    Text('Архивировать чат'),
-                  ],
-                ),
-              ),
-              // Добавьте другие PopupMenuItem при необходимости
             ],
           ),
-
-        ],
-      ),
-      body: _getBody(),
+          body: _getBody(),
+        ),
+        _buildLoadingOverlay(),
+      ],
     );
   }
 
@@ -334,6 +392,7 @@ class ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
+        _buildFilePreviewBar(),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           color: Colors.white,
@@ -342,11 +401,12 @@ class ChatScreenState extends State<ChatScreen> {
               IconButton(
                 icon: const Icon(FontAwesomeIcons.paperclip,
                     color: Color.fromRGBO(22, 79, 148, 1)),
-                onPressed: () {},
+                onPressed: _isSending ? null : _pickFiles,
               ),
               Expanded(
                 child: TextField(
                   controller: _messageController,
+                  enabled: !_isSending,
                   decoration: const InputDecoration(
                     hintText: 'Написать сообщение...',
                     hintStyle: TextStyle(color: Colors.grey),
@@ -361,22 +421,40 @@ class ChatScreenState extends State<ChatScreen> {
               IconButton(
                 icon: const Icon(Icons.send,
                     color: Color.fromRGBO(22, 79, 148, 1)),
-                onPressed: () async {
-                  if (_messageController.text.isNotEmpty) {
-                    print('try send message ${_messageController.text}');
-                    if (_chatId == null) {
-                      var chatId = await _chatCreationService.createPersonalChat(widget.anotherUserId!);
-                      if (chatId != null) {
-                        _chatId = chatId;
-                      } else {
-                        // TODO handle error
-                      }
-                    }
-                    _messagingService.sendMessage(
-                        _chatId!, _messageController.text, _channel);
-                    _messageController.text = '';
-                  }
-                },
+                onPressed: _isSending
+                    ? null
+                    : () async {
+                        if (_messageController.text.isNotEmpty || _selectedFiles.isNotEmpty) {
+                          print('try send message ${_messageController.text}');
+                          if (_chatId == null) {
+                            var chatId = await _chatCreationService.createPersonalChat(widget.anotherUserId!);
+                            if (chatId != null) {
+                              _chatId = chatId;
+                            } else {
+                              // TODO handle error
+                              return;
+                            }
+                          }
+
+                          if (_selectedFiles.isNotEmpty) {
+                            await _simulateFileUpload();
+                          }
+
+                          // TODO: Upload files and get URLs before sending message
+                          final List<Media> media = _selectedFiles.map((file) => 
+                            Media('image', 'https://i.pinimg.com/originals/ae/9b/e1/ae9be178fac17c37c1ef47e1a0c06241.jpg')).toList();
+
+                          await _messagingService.sendMessage(
+                            _chatId!,
+                            _messageController.text,
+                            _channel,
+                            media: media.isNotEmpty ? media : null,
+                          );
+                          
+                          _messageController.text = '';
+                          _clearFiles();
+                        }
+                      },
               ),
             ],
           ),
@@ -385,9 +463,130 @@ class ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildFilePreviewBar() {
+    if (_selectedFiles.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color.fromRGBO(22, 79, 148, 1), width: 1),
+          bottom: BorderSide(color: Color.fromRGBO(22, 79, 148, 1), width: 1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Выбранные файлы',
+                style: TextStyle(
+                  color: Color.fromRGBO(22, 79, 148, 1),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.close,
+                  color: Color.fromRGBO(22, 79, 148, 1),
+                ),
+                onPressed: _clearFiles,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _selectedFiles.length,
+              itemBuilder: (context, index) {
+                final file = _selectedFiles[index];
+                return Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.insert_drive_file,
+                        size: 16,
+                        color: Color.fromRGBO(22, 79, 148, 1),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        file.name.length > 15
+                            ? '${file.name.substring(0, 12)}...'
+                            : file.name,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () => _removeFile(index),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _buildChatItems() {
     List<Widget> result = [];
-    if (_messages.isEmpty) return result;
+    if (_messages.isEmpty) {
+      return [
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 80,
+                  color: Color.fromRGBO(22, 79, 148, 0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Начните общение',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromRGBO(22, 79, 148, 0.8),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Отправьте сообщение или файл',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ];
+    }
     String? lastDate;
     for (int i = 0; i < _messages.length; i++) {
       final msg = _messages[i];
